@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // GET /api/notifications/stream — SSE for real-time notifications
 // ─────────────────────────────────────────────
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return new Response("Unauthorized", { status: 401 });

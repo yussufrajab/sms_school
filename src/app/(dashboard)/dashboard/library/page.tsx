@@ -52,8 +52,8 @@ export default async function LibrarianDashboardPage() {
     take: 10,
   });
 
-  // Get popular books (most borrowed)
-  const popularBooks = await prisma.borrowRecord.groupBy({
+  // Get popular books (most borrowed) - used for analytics
+  const _popularBooks = await prisma.borrowRecord.groupBy({
     by: ["bookCopyId"],
     where: { Student: { schoolId } },
     _count: true,

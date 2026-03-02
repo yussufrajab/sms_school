@@ -20,8 +20,8 @@ export default async function ReceptionistDashboardPage() {
     take: 5,
   });
 
-  // Get upcoming events
-  const upcomingEvents = await prisma.event.findMany({
+  // Get upcoming events - available for future use
+  const _upcomingEvents = await prisma.event.findMany({
     where: {
       schoolId,
       startDate: { gte: new Date() },

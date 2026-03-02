@@ -7,8 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Calendar,
-  BookOpen,
-  ClipboardList,
   FileText,
   Clock,
   TrendingUp,
@@ -18,7 +16,6 @@ import {
   ArrowRight,
   Bell,
   MessageSquare,
-  Users,
   Award,
   Target,
 } from "lucide-react";

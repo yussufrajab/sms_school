@@ -5,12 +5,12 @@ import { SettingsClient } from "@/components/settings/settings-client";
 
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("//login");
 
   const isAdmin = ["SUPER_ADMIN", "SCHOOL_ADMIN"].includes(session.user.role);
 
-  // Get user info
-  const user = await prisma.user.findUnique({
+  // Get user info - available for future use
+  const _user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
       id: true,

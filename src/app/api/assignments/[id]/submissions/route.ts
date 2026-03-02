@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
-type UserRole = "SUPER_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT" | "PARENT" | "ACCOUNTANT" | "LIBRARIAN" | "RECEPTIONIST" | "IT_ADMIN";
-
 // ─────────────────────────────────────────────
 // Validation Schema
 // ─────────────────────────────────────────────

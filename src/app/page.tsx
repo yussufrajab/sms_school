@@ -9,7 +9,6 @@ import {
   DollarSign,
   Bus,
   Library,
-  BarChart3,
   Shield,
   Smartphone,
   Globe,

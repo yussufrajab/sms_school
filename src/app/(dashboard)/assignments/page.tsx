@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import AssignmentsListClient from "@/components/assignments/assignments-list-client";
-import AssignmentSubmissionsClient from "@/components/assignments/assignment-submissions-client";
 
 export const metadata = {
   title: "Assignments | School Management System",

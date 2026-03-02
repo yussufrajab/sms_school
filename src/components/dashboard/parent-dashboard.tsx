@@ -18,17 +18,11 @@ import {
   Bell,
   FileText,
   CreditCard,
-  BookOpen,
   CheckCircle2,
   Target,
 } from "lucide-react";
 import Link from "next/link";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   RadarChart,
@@ -109,7 +103,6 @@ const quickActions = [
 ];
 
 export function ParentDashboard({ user, data }: ParentDashboardProps) {
-  const totalPendingAssignments = data.children.reduce((sum, c) => sum + c.pendingAssignments, 0);
   const unreadMessages = data.recentMessages.filter(m => m.unread).length;
 
   return (

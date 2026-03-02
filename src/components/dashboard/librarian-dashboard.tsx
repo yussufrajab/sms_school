@@ -15,15 +15,11 @@ import {
   ArrowRight,
   Target,
   Users,
-  Library,
   BookPlus,
-  BookCopy,
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,

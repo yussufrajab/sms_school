@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
-type UserRole = "SUPER_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT" | "PARENT" | "ACCOUNTANT" | "LIBRARIAN" | "RECEPTIONIST" | "IT_ADMIN";
-
 // ─────────────────────────────────────────────
 // Validation Schema
 // ─────────────────────────────────────────────
@@ -35,7 +33,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sectionId = searchParams.get("sectionId");
   const subjectId = searchParams.get("subjectId");
-  const status = searchParams.get("status");
 
   try {
     const where: Record<string, unknown> = {};
@@ -146,8 +143,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const allowedRoles: UserRole[] = ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER"];
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  const allowedRoles = ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER"];
+  if (!allowedRoles.includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
