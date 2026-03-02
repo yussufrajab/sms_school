@@ -1,0 +1,217 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+type UserRole = "SUPER_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT" | "PARENT" | "ACCOUNTANT" | "LIBRARIAN" | "RECEPTIONIST" | "IT_ADMIN";
+
+// ─────────────────────────────────────────────
+// Validation Schema
+// ─────────────────────────────────────────────
+
+const updateInvoiceSchema = z.object({
+  status: z
+    .enum(["UNPAID", "PARTIALLY_PAID", "PAID", "OVERDUE"])
+    .optional(),
+  dueDate: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// ─────────────────────────────────────────────
+// GET /api/finance/invoices/[id] — Fetch single invoice with items and payments
+// ─────────────────────────────────────────────
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id },
+      include: {
+        Student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+            schoolId: true,
+            Section: {
+              select: {
+                id: true,
+                name: true,
+                Class: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+        AcademicYear: {
+          select: { id: true, name: true, startDate: true, endDate: true },
+        },
+        InvoiceItem: {
+          include: {
+            FeeStructure: {
+              select: {
+                id: true,
+                amount: true,
+                FeeCategory: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+        Payment: {
+          orderBy: { paidAt: "desc" },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // Access control: admins/accountants see all; students/parents see their own
+    const role = session.user.role as UserRole;
+
+    if (role === "STUDENT") {
+      const studentRecord = await prisma.student.findFirst({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!studentRecord || invoice.studentId !== studentRecord.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (role === "PARENT") {
+      const parentRecord = await prisma.parent.findFirst({
+        where: { userId: session.user.id },
+        select: { StudentParent: { select: { studentId: true } } },
+      });
+      const childIds = parentRecord?.StudentParent.map((s: { studentId: string }) => s.studentId) ?? [];
+      if (!childIds.includes(invoice.studentId)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else {
+      // Staff roles: scope to school
+      const allowedRoles: UserRole[] = [
+        "SUPER_ADMIN",
+        "SCHOOL_ADMIN",
+        "ACCOUNTANT",
+      ];
+      if (!allowedRoles.includes(role)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (
+        role !== "SUPER_ADMIN" &&
+        invoice.Student.schoolId !== session.user.schoolId
+      ) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    // Compute summary fields
+    const totalPaid = invoice.Payment.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
+    const balance = invoice.totalAmount - totalPaid;
+
+    return NextResponse.json({
+      ...invoice,
+      summary: {
+        totalAmount: invoice.totalAmount,
+        paidAmount: totalPaid,
+        balance: Math.max(0, balance),
+        itemCount: invoice.InvoiceItem.length,
+        paymentCount: invoice.Payment.length,
+      },
+    });
+  } catch (error) {
+    console.error("[GET /api/finance/invoices/[id]]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// ─────────────────────────────────────────────
+// PATCH /api/finance/invoices/[id] — Update invoice status / metadata
+// ─────────────────────────────────────────────
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allowedRoles: UserRole[] = ["SUPER_ADMIN", "SCHOOL_ADMIN", "ACCOUNTANT"];
+  if (!allowedRoles.includes(session.user.role as UserRole)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const existing = await prisma.invoice.findUnique({
+      where: { id },
+      include: {
+        Student: { select: { schoolId: true } },
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    if (existing.deletedAt) {
+      return NextResponse.json({ error: "Invoice has been deleted" }, { status: 409 });
+    }
+
+    if (
+      session.user.role !== "SUPER_ADMIN" &&
+      existing.Student.schoolId !== session.user.schoolId
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const data = updateInvoiceSchema.parse(body);
+
+    const updated = await prisma.invoice.update({
+      where: { id },
+      data: {
+        ...(data.status !== undefined && { status: data.status }),
+        ...(data.dueDate !== undefined && { dueDate: new Date(data.dueDate) }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+      },
+      include: {
+        Student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        AcademicYear: { select: { id: true, name: true } },
+        InvoiceItem: true,
+        Payment: { orderBy: { paidAt: "desc" } },
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      );
+    }
+    console.error("[PATCH /api/finance/invoices/[id]]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
