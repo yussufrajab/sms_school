@@ -373,12 +373,15 @@ export function LeaveClient({
   };
 
   const filteredApplications = applications.filter((app) => {
+    if (!search) return true;
     const searchLower = search.toLowerCase();
-    const matchesSearch =
-      app.staff.firstName.toLowerCase().includes(searchLower) ||
-      app.staff.lastName.toLowerCase().includes(searchLower) ||
-      app.staff.employeeId.toLowerCase().includes(searchLower);
-    return matchesSearch;
+    const staff = app.staff;
+    if (!staff) return false;
+    return (
+      staff.firstName.toLowerCase().includes(searchLower) ||
+      staff.lastName.toLowerCase().includes(searchLower) ||
+      staff.employeeId?.toLowerCase().includes(searchLower)
+    );
   });
 
   const pendingCount = applications.filter((a) => a.status === "PENDING").length;
