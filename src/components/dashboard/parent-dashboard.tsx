@@ -22,6 +22,7 @@ import {
   Target,
 } from "lucide-react";
 import Link from "next/link";
+import { cn, getRoleGradient } from "@/lib/utils";
 import {
   Tooltip,
   ResponsiveContainer,
@@ -94,12 +95,12 @@ interface ParentDashboardProps {
 }
 
 const quickActions = [
-  { label: "Messages", href: "/communication/messages", icon: MessageSquare, color: "text-blue-500" },
-  { label: "Pay Fees", href: "/finance/invoices", icon: CreditCard, color: "text-green-500" },
-  { label: "Events", href: "/communication/events", icon: Calendar, color: "text-purple-500" },
-  { label: "Announcements", href: "/communication/announcements", icon: Bell, color: "text-orange-500" },
-  { label: "Results", href: "/examinations", icon: TrendingUp, color: "text-cyan-500" },
-  { label: "Assignments", href: "/academic/assignments", icon: FileText, color: "text-pink-500" },
+  { label: "Messages", href: "/communication/messages", icon: MessageSquare, iconBg: "bg-indigo-50", iconColor: "text-indigo-600" },
+  { label: "Pay Fees", href: "/finance/invoices", icon: CreditCard, iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+  { label: "Events", href: "/communication/events", icon: Calendar, iconBg: "bg-purple-50", iconColor: "text-purple-600" },
+  { label: "Announcements", href: "/communication/announcements", icon: Bell, iconBg: "bg-orange-50", iconColor: "text-orange-600" },
+  { label: "Results", href: "/examinations", icon: TrendingUp, iconBg: "bg-sky-50", iconColor: "text-sky-600" },
+  { label: "Assignments", href: "/academic/assignments", icon: FileText, iconBg: "bg-pink-50", iconColor: "text-pink-600" },
 ];
 
 export function ParentDashboard({ user, data }: ParentDashboardProps) {
@@ -108,34 +109,27 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Welcome, {user.name?.split(" ")[0] || "Parent"}!</h1>
-          <p className="text-muted-foreground">Monitor your children&apos;s academic progress</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/communication/messages">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Messages
-              {unreadMessages > 0 && (
-                <Badge variant="destructive" className="ml-2">{unreadMessages}</Badge>
-              )}
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/finance/invoices">
-              <DollarSign className="mr-2 h-4 w-4" />
-              Pay Fees
-            </Link>
-          </Button>
+      <div className="rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 p-6 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Welcome, {user.name?.split(" ")[0] || "Parent"}!</h1>
+            <p className="text-rose-100">Monitor your children&apos;s academic progress</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white" asChild>
+              <Link href="/communication/messages"><MessageSquare className="mr-2 h-4 w-4" />Messages{unreadMessages > 0 && (<Badge variant="destructive" className="ml-2">{unreadMessages}</Badge>)}</Link>
+            </Button>
+            <Button className="bg-white text-rose-600 hover:bg-rose-50 shadow-sm" asChild>
+              <Link href="/finance/invoices"><DollarSign className="mr-2 h-4 w-4" />Pay Fees</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardTitle className="text-base text-slate-800">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -143,12 +137,14 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
               <Button
                 key={action.href}
                 variant="outline"
-                className="h-auto py-3 flex-col gap-1"
+                className="h-auto py-3 flex-col gap-1.5 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                 asChild
               >
                 <Link href={action.href}>
-                  <action.icon className={`h-5 w-5 ${action.color}`} />
-                  <span className="text-xs">{action.label}</span>
+                  <div className={cn("flex items-center justify-center w-9 h-9 rounded-xl", action.iconBg)}>
+                    <action.icon className={cn("h-4 w-4", action.iconColor)} />
+                  </div>
+                  <span className="text-xs text-slate-600">{action.label}</span>
                 </Link>
               </Button>
             ))}
@@ -158,27 +154,27 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-rose-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Children</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Children</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-rose-50"><Users className="h-4 w-4 text-rose-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.children.length}</div>
-            <p className="text-xs text-muted-foreground">Enrolled students</p>
+            <div className="text-2xl font-bold text-slate-900">{data.children.length}</div>
+            <p className="text-xs text-slate-500">Enrolled students</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fee Balance</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Fee Balance</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50"><DollarSign className="h-4 w-4 text-amber-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${data.feeSummary.overdue > 0 ? "text-red-500" : ""}`}>
+            <div className={`text-2xl font-bold text-slate-900 ${data.feeSummary.overdue > 0 ? "text-red-500" : ""}`}>
               ${(data.feeSummary.totalDue - data.feeSummary.paid).toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               {data.feeSummary.overdue > 0 ? (
                 <span className="text-destructive">${data.feeSummary.overdue} overdue</span>
               ) : (
@@ -188,35 +184,35 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unread Messages</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Unread Messages</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-50"><MessageSquare className="h-4 w-4 text-indigo-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{unreadMessages}</div>
-            <p className="text-xs text-muted-foreground">From teachers & admin</p>
+            <div className="text-2xl font-bold text-slate-900">{unreadMessages}</div>
+            <p className="text-xs text-slate-500">From teachers & admin</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Attendance Alerts</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Attendance Alerts</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-orange-50"><AlertCircle className="h-4 w-4 text-orange-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.attendanceAlerts.length}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold text-slate-900">{data.attendanceAlerts.length}</div>
+            <p className="text-xs text-slate-500">This month</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Pending Tasks */}
       {data.pendingTasks && data.pendingTasks.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950">
+        <Card className="border-amber-200 bg-amber-50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
+              <CardTitle className="flex items-center gap-2 text-amber-800">
                 <Target className="h-5 w-5" />
                 Action Required
               </CardTitle>
@@ -229,7 +225,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                 <Link
                   href={task.link || "#"}
                   key={task.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-orange-100 dark:bg-orange-900 hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg bg-amber-100 hover:bg-amber-200 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${
@@ -242,7 +238,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                     </div>
                   </div>
                   {task.dueDate && (
-                    <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+                    <div className="flex items-center gap-2 text-sm text-amber-700">
                       <Clock className="h-4 w-4" />
                       {task.dueDate}
                     </div>
@@ -259,7 +255,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-slate-800">
                 <Users className="h-5 w-5" />
                 My Children
               </CardTitle>
@@ -275,7 +271,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                 href={`/students/${child.id}`}
                 className="block"
               >
-                <Card className="border hover:shadow-md transition-all hover:border-primary/50">
+                <Card className="border border-slate-200 hover:shadow-md transition-all hover:border-rose-300">
                   <CardContent className="pt-4">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-12 w-12">
@@ -325,7 +321,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
       {data.childrenPerformance && data.childrenPerformance.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <TrendingUp className="h-5 w-5" />
               Performance Comparison
             </CardTitle>
@@ -349,7 +345,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                     />
                   ))}
                   <Legend />
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -363,7 +359,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <MessageSquare className="h-5 w-5" />
                   Recent Messages
                 </CardTitle>
@@ -390,7 +386,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                     <Link
                       key={message.id}
                       href={`/communication/messages/${message.id}`}
-                      className={`flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors ${message.unread ? "bg-primary/5 border-primary/20" : ""}`}
+                      className={`flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:bg-rose-50/40 transition-colors ${message.unread ? "bg-rose-50 border-rose-200" : ""}`}
                     >
                       <Avatar className="h-8 w-8">
                         <AvatarFallback>
@@ -401,7 +397,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{message.from}</p>
                           {message.unread && (
-                            <span className="w-2 h-2 rounded-full bg-primary" />
+                            <span className="w-2 h-2 rounded-full bg-rose-500" />
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{message.subject}</p>
@@ -420,7 +416,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <Calendar className="h-5 w-5" />
                   Upcoming Events
                 </CardTitle>
@@ -445,9 +441,9 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
                   {data.upcomingEvents.slice(0, 6).map((event) => (
                     <div
                       key={event.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:bg-rose-50/40 transition-colors"
                     >
-                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary shrink-0">
+                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-rose-50 text-rose-600 shrink-0">
                         <span className="text-xs font-medium">
                           {new Date(event.date).toLocaleDateString("en-US", { month: "short" })}
                         </span>
@@ -472,9 +468,9 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
 
       {/* Attendance Alerts */}
       {data.attendanceAlerts.length > 0 && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
+        <Card className="border-amber-200 bg-amber-50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+            <CardTitle className="flex items-center gap-2 text-amber-800">
               <AlertCircle className="h-5 w-5" />
               Attendance Alerts
             </CardTitle>
@@ -484,7 +480,7 @@ export function ParentDashboard({ user, data }: ParentDashboardProps) {
               {data.attendanceAlerts.slice(0, 4).map((alert) => (
                 <div
                   key={alert.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900"
+                  className="flex items-center justify-between p-3 rounded-lg bg-amber-100"
                 >
                   <div>
                     <p className="font-medium">{alert.childName}</p>

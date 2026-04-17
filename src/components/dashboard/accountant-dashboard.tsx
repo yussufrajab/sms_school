@@ -21,6 +21,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { cn, getRoleGradient } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -94,12 +95,12 @@ interface AccountantDashboardProps {
 const COLORS = ["#22c55e", "#f59e0b", "#ef4444"];
 
 const quickActions = [
-  { label: "Invoices", href: "/finance/invoices", icon: Receipt, color: "text-blue-500" },
-  { label: "Fee Structure", href: "/finance/fees", icon: DollarSign, color: "text-green-500" },
-  { label: "Payroll", href: "/finance/payroll", icon: Wallet, color: "text-purple-500" },
-  { label: "Reports", href: "/finance/reports", icon: PieChart, color: "text-orange-500" },
-  { label: "Expenses", href: "/finance/expenses", icon: FileText, color: "text-cyan-500" },
-  { label: "Defaulters", href: "/finance/invoices?status=overdue", icon: AlertCircle, color: "text-red-500" },
+  { label: "Invoices", href: "/finance/invoices", icon: Receipt, iconBg: "bg-indigo-50", iconColor: "text-indigo-600" },
+  { label: "Fee Structure", href: "/finance/fees", icon: DollarSign, iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+  { label: "Payroll", href: "/finance/payroll", icon: Wallet, iconBg: "bg-purple-50", iconColor: "text-purple-600" },
+  { label: "Reports", href: "/finance/reports", icon: PieChart, iconBg: "bg-orange-50", iconColor: "text-orange-600" },
+  { label: "Expenses", href: "/finance/expenses", icon: FileText, iconBg: "bg-cyan-50", iconColor: "text-cyan-600" },
+  { label: "Defaulters", href: "/finance/invoices?status=overdue", icon: AlertCircle, iconBg: "bg-red-50", iconColor: "text-red-600" },
 ];
 
 export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
@@ -116,31 +117,27 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Finance Dashboard</h1>
-          <p className="text-muted-foreground">Overview of financial operations</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/finance/invoices">
-              <FileText className="mr-2 h-4 w-4" />
-              Invoices
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/finance/fees">
-              <DollarSign className="mr-2 h-4 w-4" />
-              Fee Structure
-            </Link>
-          </Button>
+      <div className="rounded-2xl bg-gradient-to-r from-amber-600 to-yellow-500 p-6 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Finance Dashboard</h1>
+            <p className="text-amber-100">Overview of financial operations</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white" asChild>
+              <Link href="/finance/invoices"><FileText className="mr-2 h-4 w-4" />Invoices</Link>
+            </Button>
+            <Button className="bg-white text-amber-600 hover:bg-amber-50 shadow-sm" asChild>
+              <Link href="/finance/fees"><DollarSign className="mr-2 h-4 w-4" />Fee Structure</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardTitle className="text-base text-slate-800">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -148,12 +145,14 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
               <Button
                 key={action.href}
                 variant="outline"
-                className="h-auto py-3 flex-col gap-1"
+                className="h-auto py-3 flex-col gap-1.5 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                 asChild
               >
                 <Link href={action.href}>
-                  <action.icon className={`h-5 w-5 ${action.color}`} />
-                  <span className="text-xs">{action.label}</span>
+                  <div className={cn("flex items-center justify-center w-9 h-9 rounded-xl", action.iconBg)}>
+                    <action.icon className={cn("h-4 w-4", action.iconColor)} />
+                  </div>
+                  <span className="text-xs text-slate-600">{action.label}</span>
                 </Link>
               </Button>
             ))}
@@ -163,10 +162,10 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
 
       {/* Pending Tasks */}
       {data.pendingTasks && data.pendingTasks.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950">
+        <Card className="border-amber-200 bg-amber-50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
+              <CardTitle className="flex items-center gap-2 text-amber-800">
                 <Target className="h-5 w-5" />
                 Action Required
               </CardTitle>
@@ -179,7 +178,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
                 <Link
                   href={task.link || "#"}
                   key={task.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-orange-100 dark:bg-orange-900 hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg bg-amber-100 hover:bg-amber-200 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${
@@ -192,7 +191,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
                     </div>
                   </div>
                   {task.dueDate && (
-                    <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+                    <div className="flex items-center gap-2 text-sm text-amber-700">
                       <Clock className="h-4 w-4" />
                       {task.dueDate}
                     </div>
@@ -206,10 +205,10 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Total Collected</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50"><TrendingUp className="h-4 w-4 text-emerald-600" /></div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -222,10 +221,10 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Amount</CardTitle>
-            <CreditCard className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Pending Amount</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50"><CreditCard className="h-4 w-4 text-amber-600" /></div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
@@ -235,10 +234,10 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Amount</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Overdue Amount</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-50"><AlertCircle className="h-4 w-4 text-red-600" /></div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
@@ -248,13 +247,13 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payroll (Monthly)</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Payroll (Monthly)</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-50"><Users className="h-4 w-4 text-indigo-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-slate-900">
               ${data.payroll.totalAmount.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -268,7 +267,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
       {data.collectionTrend && data.collectionTrend.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <TrendingUp className="h-5 w-5" />
               Collection Trend
             </CardTitle>
@@ -278,7 +277,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.collectionTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="date" 
                     className="text-xs" 
@@ -287,9 +286,10 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
                   <YAxis className="text-xs" tickFormatter={(value) => `$${value / 1000}k`} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                     }}
                     formatter={(value) => [`$${Number(value).toLocaleString()}`, "Collected"]}
                   />
@@ -312,21 +312,22 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
         {/* Collection Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Monthly Collection</CardTitle>
+            <CardTitle className="text-slate-800">Monthly Collection</CardTitle>
             <CardDescription>Fee collection trend over the past 6 months</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.monthlyCollection}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="month" className="text-xs" />
                   <YAxis className="text-xs" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                     }}
                     formatter={(value) => [`$${Number(value).toLocaleString()}`, ""]}
                   />
@@ -342,7 +343,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
         {/* Collection Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Fee Collection Status</CardTitle>
+            <CardTitle className="text-slate-800">Fee Collection Status</CardTitle>
             <CardDescription>Distribution of fee collection status</CardDescription>
           </CardHeader>
           <CardContent>
@@ -390,7 +391,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Recent Payments</CardTitle>
+                <CardTitle className="text-slate-800">Recent Payments</CardTitle>
                 <CardDescription>Latest fee payments received</CardDescription>
               </div>
               <Button variant="ghost" size="sm" asChild>
@@ -413,7 +414,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
                   {data.recentPayments.slice(0, 8).map((payment) => (
                     <div
                       key={payment.id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-amber-50/40 transition-colors"
                     >
                       <div>
                         <p className="font-medium">{payment.studentName}</p>
@@ -436,7 +437,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <AlertCircle className="h-5 w-5 text-red-500" />
                   Fee Defaulters
                 </CardTitle>
@@ -462,7 +463,7 @@ export function AccountantDashboard({ user, data }: AccountantDashboardProps) {
                   {data.defaulters.slice(0, 8).map((defaulter) => (
                     <div
                       key={defaulter.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 transition-colors"
                     >
                       <div>
                         <p className="font-medium">{defaulter.studentName}</p>

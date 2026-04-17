@@ -397,7 +397,7 @@ List all staff members.
       "employmentType": "FULL_TIME",
       "User": {
         "id": "uuid",
-        "email": "jane@school.com",
+        "email": "jane@baraka.sc.tz",
         "role": "TEACHER",
         "isActive": true
       }
@@ -418,7 +418,7 @@ Create a new staff member with user account.
 {
   "firstName": "Jane",
   "lastName": "Smith",
-  "email": "jane@school.com",
+  "email": "jane@baraka.sc.tz",
   "password": "SecurePass123!",
   "role": "TEACHER",
   "department": "Science",
@@ -1260,7 +1260,7 @@ List audit logs.
       "createdAt": "2024-01-15T10:30:00.000Z",
       "User": {
         "name": "Admin User",
-        "email": "admin@school.com",
+        "email": "admin@baraka.sc.tz",
         "role": "SCHOOL_ADMIN"
       }
     }

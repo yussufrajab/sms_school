@@ -19,6 +19,7 @@ import {
   Award,
   Target,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
   LineChart,
@@ -103,12 +104,12 @@ interface StudentDashboardProps {
 }
 
 const quickActions = [
-  { label: "My Assignments", href: "/academic/assignments", icon: FileText, color: "text-blue-500" },
-  { label: "Timetable", href: "/academic/timetable", icon: Calendar, color: "text-green-500" },
-  { label: "Results", href: "/examinations", icon: Award, color: "text-purple-500" },
-  { label: "Messages", href: "/communication/messages", icon: MessageSquare, color: "text-orange-500" },
-  { label: "Fee Payment", href: "/fees", icon: DollarSign, color: "text-cyan-500" },
-  { label: "Announcements", href: "/communication/announcements", icon: Bell, color: "text-pink-500" },
+  { label: "My Assignments", href: "/academic/assignments", icon: FileText, iconBg: "bg-indigo-50", iconColor: "text-indigo-600" },
+  { label: "Timetable", href: "/academic/timetable", icon: Calendar, iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+  { label: "Results", href: "/examinations", icon: Award, iconBg: "bg-purple-50", iconColor: "text-purple-600" },
+  { label: "Messages", href: "/communication/messages", icon: MessageSquare, iconBg: "bg-orange-50", iconColor: "text-orange-600" },
+  { label: "Fee Payment", href: "/fees", icon: DollarSign, iconBg: "bg-cyan-50", iconColor: "text-cyan-600" },
+  { label: "Announcements", href: "/communication/announcements", icon: Bell, iconBg: "bg-pink-50", iconColor: "text-pink-600" },
 ];
 
 export function StudentDashboard({ user, data }: StudentDashboardProps) {
@@ -123,7 +124,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
     {
       name: "Attendance",
       value: data.attendanceSummary.percentage,
-      fill: data.attendanceSummary.percentage >= 80 ? "#22c55e" : data.attendanceSummary.percentage >= 60 ? "#f59e0b" : "#ef4444",
+      fill: data.attendanceSummary.percentage >= 80 ? "#10b981" : data.attendanceSummary.percentage >= 60 ? "#f59e0b" : "#ef4444",
     },
   ];
 
@@ -138,33 +139,27 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Welcome, {user.name?.split(" ")[0] || "Student"}!</h1>
-          <p className="text-muted-foreground">
-            {data.classInfo.name} - {data.classInfo.section}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/academic/assignments">
-              <FileText className="mr-2 h-4 w-4" />
-              My Assignments
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/academic/timetable">
-              <Calendar className="mr-2 h-4 w-4" />
-              View Timetable
-            </Link>
-          </Button>
+      <div className="rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-500 p-6 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Welcome, {user.name?.split(" ")[0] || "Student"}!</h1>
+            <p className="text-sky-100">{data.classInfo.name} - {data.classInfo.section}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white" asChild>
+              <Link href="/academic/assignments"><FileText className="mr-2 h-4 w-4" />My Assignments</Link>
+            </Button>
+            <Button className="bg-white text-sky-600 hover:bg-sky-50 shadow-sm" asChild>
+              <Link href="/academic/timetable"><Calendar className="mr-2 h-4 w-4" />View Timetable</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Quick Links</CardTitle>
+          <CardTitle className="text-base text-slate-800">Quick Links</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -172,12 +167,14 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
               <Button
                 key={action.href}
                 variant="outline"
-                className="h-auto py-3 flex-col gap-1"
+                className="h-auto py-3 flex-col gap-1.5 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                 asChild
               >
                 <Link href={action.href}>
-                  <action.icon className={`h-5 w-5 ${action.color}`} />
-                  <span className="text-xs">{action.label}</span>
+                  <div className={cn("flex items-center justify-center w-9 h-9 rounded-xl", action.iconBg)}>
+                    <action.icon className={cn("h-4 w-4", action.iconColor)} />
+                  </div>
+                  <span className="text-xs text-slate-600">{action.label}</span>
                 </Link>
               </Button>
             ))}
@@ -187,14 +184,14 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Attendance</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Attendance</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50"><CheckCircle className="h-4 w-4 text-emerald-600" /></div>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="text-2xl font-bold">{data.attendanceSummary.percentage}%</div>
+              <div className="text-2xl font-bold text-slate-900">{data.attendanceSummary.percentage}%</div>
               <div className="h-12 w-12">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadialBarChart
@@ -209,55 +206,55 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                 </ResponsiveContainer>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {data.attendanceSummary.present} present, {data.attendanceSummary.absent} absent
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Pending Assignments</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50"><AlertCircle className="h-4 w-4 text-amber-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingAssignmentsCount}</div>
-            <Progress 
-              value={data.upcomingAssignments.length > 0 
-                ? ((data.upcomingAssignments.length - pendingAssignmentsCount) / data.upcomingAssignments.length) * 100 
+            <div className="text-2xl font-bold text-slate-900">{pendingAssignmentsCount}</div>
+            <Progress
+              value={data.upcomingAssignments.length > 0
+                ? ((data.upcomingAssignments.length - pendingAssignmentsCount) / data.upcomingAssignments.length) * 100
                 : 100
-              } 
-              className="mt-2 h-2" 
+              }
+              className="mt-2 h-2"
             />
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {data.upcomingAssignments.length - pendingAssignmentsCount} completed
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-sky-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Grade</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Average Grade</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sky-50"><TrendingUp className="h-4 w-4 text-sky-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getGradeColor(averageGrade)}`}>
+            <div className={`text-2xl font-bold text-slate-900 ${getGradeColor(averageGrade)}`}>
               {data.recentGrades.length > 0 ? `${averageGrade.toFixed(1)}%` : "N/A"}
             </div>
-            <p className="text-xs text-muted-foreground">Based on recent submissions</p>
+            <p className="text-xs text-slate-500">Based on recent submissions</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-rose-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fee Balance</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Fee Balance</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-rose-50"><DollarSign className="h-4 w-4 text-rose-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${data.feeStatus.pending > 0 ? "text-red-500" : "text-green-500"}`}>
+            <div className={`text-2xl font-bold text-slate-900 ${data.feeStatus.pending > 0 ? "text-red-500" : "text-green-500"}`}>
               ${data.feeStatus.pending.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               {data.feeStatus.pending > 0 ? "Outstanding balance" : "All fees cleared"}
             </p>
           </CardContent>
@@ -266,10 +263,10 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
 
       {/* Pending Tasks */}
       {data.pendingTasks && data.pendingTasks.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950">
+        <Card className="border-amber-200 bg-amber-50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
+              <CardTitle className="flex items-center gap-2 text-amber-800">
                 <Target className="h-5 w-5" />
                 Tasks Due Soon
               </CardTitle>
@@ -282,7 +279,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                 <Link
                   href={task.link || "#"}
                   key={task.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-orange-100 dark:bg-orange-900 hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg bg-amber-100 hover:bg-amber-200 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${
@@ -295,7 +292,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                     </div>
                   </div>
                   {task.dueDate && (
-                    <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+                    <div className="flex items-center gap-2 text-sm text-amber-700">
                       <Clock className="h-4 w-4" />
                       {task.dueDate}
                     </div>
@@ -311,7 +308,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
       {data.gradeTrend && data.gradeTrend.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <TrendingUp className="h-5 w-5" />
               Grade Trend
             </CardTitle>
@@ -321,22 +318,23 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data.gradeTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="month" className="text-xs" />
                   <YAxis domain={[0, 100]} className="text-xs" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                     }}
                     formatter={(value) => [`${Number(value).toFixed(1)}%`, "Average"]}
                   />
                   <Area
                     type="monotone"
                     dataKey="average"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary))"
+                    stroke="#0ea5e9"
+                    fill="#0ea5e9"
                     fillOpacity={0.2}
                   />
                 </AreaChart>
@@ -352,7 +350,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <Calendar className="h-5 w-5" />
                   Today&apos;s Schedule
                 </CardTitle>
@@ -377,10 +375,10 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                 <div className="space-y-3">
                   {data.todaySchedule.map((schedule) => (
                     <div key={schedule.id} className="relative flex items-start gap-4">
-                      <div className="relative z-10 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      <div className="relative z-10 flex items-center justify-center w-10 h-10 rounded-full bg-sky-500 text-white shadow-sm text-sm font-medium">
                         {schedule.period}
                       </div>
-                      <div className="flex-1 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                      <div className="flex-1 p-3 rounded-lg bg-slate-50/50 hover:bg-slate-100 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{schedule.subject}</p>
@@ -405,7 +403,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <FileText className="h-5 w-5" />
                   Upcoming Assignments
                 </CardTitle>
@@ -432,7 +430,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                     <Link
                       key={assignment.id}
                       href={`/academic/assignments/${assignment.id}`}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-sky-50/40 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{assignment.title}</p>
@@ -461,7 +459,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <Award className="h-5 w-5" />
                   Recent Grades
                 </CardTitle>
@@ -488,7 +486,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                     return (
                       <div
                         key={grade.id}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-sky-50/40 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{grade.assignment}</p>
@@ -504,7 +502,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                               <RadialBarChart
                                 innerRadius="70%"
                                 outerRadius="100%"
-                                data={[{ value: percentage, fill: percentage >= 50 ? "#22c55e" : "#ef4444" }]}
+                                data={[{ value: percentage, fill: percentage >= 50 ? "#10b981" : "#ef4444" }]}
                                 startAngle={90}
                                 endAngle={-270}
                               >
@@ -527,7 +525,7 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <Calendar className="h-5 w-5" />
                   Upcoming Events
                 </CardTitle>
@@ -552,9 +550,9 @@ export function StudentDashboard({ user, data }: StudentDashboardProps) {
                   {data.upcomingEvents.slice(0, 6).map((event) => (
                     <div
                       key={event.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:bg-sky-50/40 transition-colors"
                     >
-                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary shrink-0">
+                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-sky-50 text-sky-600 shrink-0">
                         <span className="text-xs font-medium">
                           {new Date(event.date).toLocaleDateString("en-US", { month: "short" })}
                         </span>

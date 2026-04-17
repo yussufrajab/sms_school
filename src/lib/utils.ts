@@ -105,3 +105,66 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2);
 }
+
+// Role-based color utilities
+export function getRoleGradient(role: UserRole): string {
+  const gradients: Record<UserRole, string> = {
+    SUPER_ADMIN: "from-indigo-600 to-violet-600",
+    IT_ADMIN: "from-indigo-600 to-violet-600",
+    SCHOOL_ADMIN: "from-teal-600 to-cyan-600",
+    TEACHER: "from-emerald-600 to-teal-600",
+    STUDENT: "from-sky-500 to-indigo-500",
+    PARENT: "from-rose-600 to-orange-500",
+    ACCOUNTANT: "from-amber-600 to-yellow-500",
+    LIBRARIAN: "from-purple-600 to-indigo-500",
+    RECEPTIONIST: "from-pink-500 to-rose-500",
+  };
+  return gradients[role] ?? "from-indigo-600 to-violet-600";
+}
+
+export function getRoleColor(role: UserRole): string {
+  const colors: Record<UserRole, string> = {
+    SUPER_ADMIN: "text-indigo-600",
+    IT_ADMIN: "text-indigo-600",
+    SCHOOL_ADMIN: "text-teal-600",
+    TEACHER: "text-emerald-600",
+    STUDENT: "text-sky-500",
+    PARENT: "text-rose-600",
+    ACCOUNTANT: "text-amber-600",
+    LIBRARIAN: "text-purple-600",
+    RECEPTIONIST: "text-pink-500",
+  };
+  return colors[role] ?? "text-indigo-600";
+}
+
+export function getRoleBg(role: UserRole): string {
+  const bgs: Record<UserRole, string> = {
+    SUPER_ADMIN: "bg-indigo-50",
+    IT_ADMIN: "bg-indigo-50",
+    SCHOOL_ADMIN: "bg-teal-50",
+    TEACHER: "bg-emerald-50",
+    STUDENT: "bg-sky-50",
+    PARENT: "bg-rose-50",
+    ACCOUNTANT: "bg-amber-50",
+    LIBRARIAN: "bg-purple-50",
+    RECEPTIONIST: "bg-pink-50",
+  };
+  return bgs[role] ?? "bg-indigo-50";
+}
+
+export function getRoleBorder(role: UserRole): string {
+  const borders: Record<UserRole, string> = {
+    SUPER_ADMIN: "border-indigo-500",
+    IT_ADMIN: "border-indigo-500",
+    SCHOOL_ADMIN: "border-teal-500",
+    TEACHER: "border-emerald-500",
+    STUDENT: "border-sky-500",
+    PARENT: "border-rose-500",
+    ACCOUNTANT: "border-amber-500",
+    LIBRARIAN: "border-purple-500",
+    RECEPTIONIST: "border-pink-500",
+  };
+  return borders[role] ?? "border-indigo-500";
+}
+
+export const CHART_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6"];

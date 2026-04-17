@@ -358,11 +358,11 @@ function BookCard({ book }: { book: Book }) {
             className={cn(
               "text-xs",
               isFullyAvailable &&
-                "border-green-500 text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400",
+                "border-green-500 text-green-700 bg-green-50",
               isPartiallyAvailable &&
-                "border-yellow-500 text-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400",
+                "border-yellow-500 text-yellow-700 bg-yellow-50",
               isUnavailable &&
-                "border-red-400 text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                "border-red-400 text-red-700 bg-red-50"
             )}
           >
             {isUnavailable

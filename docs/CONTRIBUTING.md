@@ -830,7 +830,7 @@ school-management-system/
 
 - **GitHub Issues**: For bug reports and feature requests
 - **GitHub Discussions**: For questions and general discussion
-- **Email**: maintainers@school-system.com
+- **Email**: maintainers@baraka.sc.tz
 
 ---
 

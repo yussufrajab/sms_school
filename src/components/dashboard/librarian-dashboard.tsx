@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { cn, getRoleGradient } from "@/lib/utils";
 import {
   XAxis,
   YAxis,
@@ -89,12 +90,12 @@ interface LibrarianDashboardProps {
 }
 
 const quickActions = [
-  { label: "Catalog", href: "/library/books", icon: BookOpen, color: "text-blue-500" },
-  { label: "Borrow/Return", href: "/library/borrow", icon: BookMarked, color: "text-green-500" },
-  { label: "Add Book", href: "/library/books/new", icon: BookPlus, color: "text-purple-500" },
-  { label: "Members", href: "/library/members", icon: Users, color: "text-orange-500" },
-  { label: "Fines", href: "/library/fines", icon: DollarSign, color: "text-red-500" },
-  { label: "Reports", href: "/library/reports", icon: TrendingUp, color: "text-cyan-500" },
+  { label: "Catalog", href: "/library/books", icon: BookOpen, iconBg: "bg-indigo-50", iconColor: "text-indigo-600" },
+  { label: "Borrow/Return", href: "/library/borrow", icon: BookMarked, iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+  { label: "Add Book", href: "/library/books/new", icon: BookPlus, iconBg: "bg-purple-50", iconColor: "text-purple-600" },
+  { label: "Members", href: "/library/members", icon: Users, iconBg: "bg-orange-50", iconColor: "text-orange-600" },
+  { label: "Fines", href: "/library/fines", icon: DollarSign, iconBg: "bg-red-50", iconColor: "text-red-600" },
+  { label: "Reports", href: "/library/reports", icon: TrendingUp, iconBg: "bg-cyan-50", iconColor: "text-cyan-600" },
 ];
 
 export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
@@ -105,31 +106,27 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Library Dashboard</h1>
-          <p className="text-muted-foreground">Manage library resources and borrowing</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/library/books">
-              <BookOpen className="mr-2 h-4 w-4" />
-              Book Catalog
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/library/borrow">
-              <BookMarked className="mr-2 h-4 w-4" />
-              Borrow/Return
-            </Link>
-          </Button>
+      <div className="rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-500 p-6 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Library Dashboard</h1>
+            <p className="text-purple-100">Manage library resources and borrowing</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white" asChild>
+              <Link href="/library/books"><BookOpen className="mr-2 h-4 w-4" />Book Catalog</Link>
+            </Button>
+            <Button className="bg-white text-purple-600 hover:bg-purple-50 shadow-sm" asChild>
+              <Link href="/library/borrow"><BookMarked className="mr-2 h-4 w-4" />Borrow/Return</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardTitle className="text-base text-slate-800">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -137,12 +134,14 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
               <Button
                 key={action.href}
                 variant="outline"
-                className="h-auto py-3 flex-col gap-1"
+                className="h-auto py-3 flex-col gap-1.5 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                 asChild
               >
                 <Link href={action.href}>
-                  <action.icon className={`h-5 w-5 ${action.color}`} />
-                  <span className="text-xs">{action.label}</span>
+                  <div className={cn("flex items-center justify-center w-9 h-9 rounded-xl", action.iconBg)}>
+                    <action.icon className={cn("h-4 w-4", action.iconColor)} />
+                  </div>
+                  <span className="text-xs text-slate-600">{action.label}</span>
                 </Link>
               </Button>
             ))}
@@ -152,10 +151,10 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
 
       {/* Pending Tasks */}
       {data.pendingTasks && data.pendingTasks.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950">
+        <Card className="border-amber-200 bg-amber-50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
+              <CardTitle className="flex items-center gap-2 text-amber-800">
                 <Target className="h-5 w-5" />
                 Action Required
               </CardTitle>
@@ -168,7 +167,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                 <Link
                   href={task.link || "#"}
                   key={task.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-orange-100 dark:bg-orange-900 hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg bg-amber-100 hover:bg-amber-200 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${
@@ -181,7 +180,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                     </div>
                   </div>
                   {task.dueDate && (
-                    <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+                    <div className="flex items-center gap-2 text-sm text-amber-700">
                       <Clock className="h-4 w-4" />
                       {task.dueDate}
                     </div>
@@ -195,48 +194,48 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Books</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Total Books</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-50"><BookOpen className="h-4 w-4 text-purple-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.stats.totalBooks}</div>
-            <p className="text-xs text-muted-foreground">{data.stats.totalCopies} copies</p>
+            <div className="text-2xl font-bold text-slate-900">{data.stats.totalBooks}</div>
+            <p className="text-xs text-slate-500">{data.stats.totalCopies} copies</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available</CardTitle>
-            <BookMarked className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Available</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50"><BookMarked className="h-4 w-4 text-emerald-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{data.stats.availableCopies}</div>
+            <div className="text-2xl font-bold text-slate-900">{data.stats.availableCopies}</div>
             <Progress value={availabilityRate} className="mt-2 h-2" />
-            <p className="text-xs text-muted-foreground mt-1">{availabilityRate}% available</p>
+            <p className="text-xs text-slate-500 mt-1">{availabilityRate}% available</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Borrowed</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Borrowed</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50"><Clock className="h-4 w-4 text-amber-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{data.stats.borrowedCopies}</div>
-            <p className="text-xs text-muted-foreground">Currently on loan</p>
+            <div className="text-2xl font-bold text-slate-900">{data.stats.borrowedCopies}</div>
+            <p className="text-xs text-slate-500">Currently on loan</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium text-slate-600">Overdue</CardTitle>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-50"><AlertCircle className="h-4 w-4 text-red-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{data.overdueBooks.length}</div>
-            <p className="text-xs text-muted-foreground">Books overdue</p>
+            <div className="text-2xl font-bold text-slate-900">{data.overdueBooks.length}</div>
+            <p className="text-xs text-slate-500">Books overdue</p>
           </CardContent>
         </Card>
       </div>
@@ -245,7 +244,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
       {data.borrowingTrend && data.borrowingTrend.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <TrendingUp className="h-5 w-5" />
               Borrowing Trend
             </CardTitle>
@@ -255,7 +254,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.borrowingTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="date" 
                     className="text-xs"
@@ -264,9 +263,10 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                   <YAxis className="text-xs" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                     }}
                   />
                   <Line
@@ -299,7 +299,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <AlertCircle className="h-5 w-5 text-red-500" />
                   Overdue Books
                 </CardTitle>
@@ -325,7 +325,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                   {data.overdueBooks.slice(0, 8).map((book) => (
                     <div
                       key={book.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{book.bookTitle}</p>
@@ -348,7 +348,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
                   <Clock className="h-5 w-5" />
                   Recent Borrows
                 </CardTitle>
@@ -374,7 +374,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                   {data.recentBorrows.slice(0, 8).map((borrow) => (
                     <div
                       key={borrow.id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-purple-50/40 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{borrow.bookTitle}</p>
@@ -399,7 +399,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
         {/* Popular Books */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <TrendingUp className="h-5 w-5" />
               Most Borrowed Books
             </CardTitle>
@@ -415,9 +415,9 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                 {data.popularBooks.slice(0, 5).map((book, index) => (
                   <div
                     key={book.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:bg-purple-50/40 transition-colors"
                   >
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-medium">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-50 text-purple-600 font-medium">
                       {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -435,7 +435,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
         {/* Fines Summary */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-slate-800">
               <DollarSign className="h-5 w-5" />
               Fines Summary
             </CardTitle>
@@ -443,7 +443,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50/50 hover:bg-slate-100 transition-colors">
                 <div>
                   <p className="text-sm text-muted-foreground">Outstanding Fines</p>
                   <p className="text-2xl font-bold text-red-600">
@@ -452,7 +452,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                 </div>
                 <DollarSign className="h-8 w-8 text-red-500" />
               </div>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50/50 hover:bg-slate-100 transition-colors">
                 <div>
                   <p className="text-sm text-muted-foreground">Collected This Month</p>
                   <p className="text-2xl font-bold text-green-600">

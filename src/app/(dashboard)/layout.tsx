@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-white">
       <Sidebar userRole={session.user.role} />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar user={session.user} notificationCount={notificationCount} />

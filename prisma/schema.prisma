@@ -14,7 +14,7 @@ model AcademicYear {
   endDate           DateTime
   isCurrent         Boolean             @default(false)
   createdAt         DateTime            @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime            @default(now())
   School            School              @relation(fields: [schoolId], references: [id])
   Exam              Exam[]
   FeeStructure      FeeStructure[]
@@ -58,7 +58,7 @@ model Announcement {
   isPublished Boolean  @default(true)
   publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime            @default(now())
   User        User     @relation(fields: [authorId], references: [id])
   School      School   @relation(fields: [schoolId], references: [id])
 
@@ -79,7 +79,7 @@ model Assignment {
   latePenalty          Float?
   fileUrl              String?
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime            @default(now())
   Section              Section                @relation(fields: [sectionId], references: [id])
   Subject              Subject                @relation(fields: [subjectId], references: [id])
   AssignmentSubmission AssignmentSubmission[]
@@ -144,7 +144,7 @@ model Book {
   digitalUrl    String?
   totalCopies   Int        @default(1)
   createdAt     DateTime   @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime            @default(now())
   School        School     @relation(fields: [schoolId], references: [id])
   BookCopy      BookCopy[]
 
@@ -159,7 +159,7 @@ model BookCopy {
   isAvailable  Boolean        @default(true)
   condition    String         @default("GOOD")
   createdAt    DateTime       @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime            @default(now())
   Book         Book           @relation(fields: [bookId], references: [id])
   BorrowRecord BorrowRecord[]
 
@@ -176,7 +176,7 @@ model BorrowRecord {
   fineAmount     Float     @default(0)
   finePaid       Boolean   @default(false)
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   BookCopy       BookCopy  @relation(fields: [bookCopyId], references: [id])
   Student        Student   @relation(fields: [studentId], references: [id])
 
@@ -192,7 +192,7 @@ model Class {
   level       Int
   description String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime            @default(now())
   School      School    @relation(fields: [schoolId], references: [id])
   Section     Section[]
 
@@ -208,7 +208,7 @@ model Driver {
   licenseExpiry DateTime
   phone         String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime            @default(now())
   Vehicle       Vehicle?
 
   @@index([licenseExpiry])
@@ -226,7 +226,7 @@ model Event {
   visibility  EventVisibility @default(ALL)
   createdBy   String
   createdAt   DateTime        @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime            @default(now())
   School      School          @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId])
@@ -243,7 +243,7 @@ model Exam {
   endDate        DateTime
   isPublished    Boolean       @default(false)
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   AcademicYear   AcademicYear  @relation(fields: [academicYearId], references: [id])
   Term           Term?         @relation(fields: [termId], references: [id])
   ExamSubject    ExamSubject[]
@@ -260,7 +260,7 @@ model ExamResult {
   rank          Int?
   remarks       String?
   createdAt     DateTime    @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime            @default(now())
   ExamSubject   ExamSubject @relation(fields: [examSubjectId], references: [id])
   Student       Student     @relation(fields: [studentId], references: [id])
 
@@ -297,7 +297,7 @@ model FeeCategory {
   description  String?
   isRecurring  Boolean        @default(true)
   createdAt    DateTime       @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime            @default(now())
   School       School         @relation(fields: [schoolId], references: [id])
   FeeStructure FeeStructure[]
 
@@ -312,7 +312,7 @@ model FeeDiscount {
   value     Float
   reason    String?
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime            @default(now())
 
   @@index([studentId])
 }
@@ -325,7 +325,7 @@ model FeeStructure {
   amount         Float
   dueDay         Int?
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   AcademicYear   AcademicYear  @relation(fields: [academicYearId], references: [id])
   FeeCategory    FeeCategory   @relation(fields: [feeCategoryId], references: [id])
   InvoiceItem    InvoiceItem[]
@@ -364,7 +364,7 @@ model Invoice {
   status         InvoiceStatus @default(UNPAID)
   notes          String?
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   deletedAt      DateTime?
   AcademicYear   AcademicYear  @relation(fields: [academicYearId], references: [id])
   Student        Student       @relation(fields: [studentId], references: [id])
@@ -403,7 +403,7 @@ model LeaveApplication {
   reviewNotes String?
   fileUrl     String?
   createdAt   DateTime    @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime            @default(now())
   Staff       Staff       @relation(fields: [staffId], references: [id])
 
   @@index([staffId])
@@ -455,7 +455,7 @@ model Parent {
   address       String?
   occupation    String?
   createdAt     DateTime        @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime            @default(now())
   School        School          @relation(fields: [schoolId], references: [id])
   User          User            @relation(fields: [userId], references: [id])
   StudentParent StudentParent[]
@@ -490,7 +490,7 @@ model Payroll {
   approvedAt     DateTime?
   isLocked       Boolean       @default(false)
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   AcademicYear   AcademicYear  @relation(fields: [academicYearId], references: [id])
   PayrollItem    PayrollItem[]
 
@@ -530,7 +530,7 @@ model PerformanceEvaluation {
   overallRating String
   comments      String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime            @default(now())
   Staff         Staff    @relation(fields: [staffId], references: [id])
 
   @@index([staffId])
@@ -546,7 +546,7 @@ model Route {
   stops            Json
   vehicleId        String?
   createdAt        DateTime           @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime            @default(now())
   School           School             @relation(fields: [schoolId], references: [id])
   Vehicle          Vehicle?           @relation(fields: [vehicleId], references: [id])
   StudentTransport StudentTransport[]
@@ -564,7 +564,7 @@ model SalaryStructure {
   pensionDeduction   Float    @default(0)
   healthDeduction    Float    @default(0)
   createdAt          DateTime @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime            @default(now())
   Staff              Staff    @relation(fields: [staffId], references: [id])
 }
 
@@ -583,7 +583,7 @@ model School {
   employeeIdFormat String         @default("EMP-{YEAR}-{SEQ4}")
   isActive         Boolean        @default(true)
   createdAt        DateTime       @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime            @default(now())
   AcademicYear     AcademicYear[]
   Announcement     Announcement[]
   AuditLog         AuditLog[]
@@ -608,7 +608,7 @@ model Section {
   name               String
   maxCapacity        Int                  @default(40)
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime            @default(now())
   Assignment         Assignment[]
   ExamSubject        ExamSubject[]
   Class              Class                @relation(fields: [classId], references: [id])
@@ -656,7 +656,7 @@ model Staff {
   photoUrl              String?
   isActive              Boolean                 @default(true)
   createdAt             DateTime                @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime            @default(now())
   deletedAt             DateTime?
   LeaveApplication      LeaveApplication[]
   PayrollItem           PayrollItem[]
@@ -681,7 +681,7 @@ model StaffAttendance {
   status    StaffAttendanceStatus @default(PRESENT)
   remarks   String?
   createdAt DateTime              @default(now())
-  updatedAt DateTime
+  updatedAt DateTime            @default(now())
   Staff     Staff                 @relation(fields: [staffId], references: [id])
 
   @@unique([staffId, date])
@@ -708,7 +708,7 @@ model Student {
   status               StudentStatus          @default(ACTIVE)
   photoUrl             String?
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime            @default(now())
   deletedAt            DateTime?
   AssignmentSubmission AssignmentSubmission[]
   BorrowRecord         BorrowRecord[]
@@ -738,7 +738,7 @@ model StudentAttendance {
   markedBy       String?
   remarks        String?
   createdAt      DateTime         @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   AcademicYear   AcademicYear     @relation(fields: [academicYearId], references: [id])
   Section        Section          @relation(fields: [sectionId], references: [id])
   Student        Student          @relation(fields: [studentId], references: [id])
@@ -767,7 +767,7 @@ model StudentTransport {
   stopName  String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime            @default(now())
   Route     Route    @relation(fields: [routeId], references: [id])
   Student   Student  @relation(fields: [studentId], references: [id])
 
@@ -783,7 +783,7 @@ model Subject {
   type               SubjectType          @default(CORE)
   creditHours        Int                  @default(1)
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime            @default(now())
   Assignment         Assignment[]
   ExamSubject        ExamSubject[]
   School             School               @relation(fields: [schoolId], references: [id])
@@ -818,7 +818,7 @@ model Term {
   startDate      DateTime
   endDate        DateTime
   createdAt      DateTime     @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @default(now())
   Exam           Exam[]
   AcademicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
 
@@ -836,7 +836,7 @@ model Timetable {
   endTime   String
   classroom String?
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime            @default(now())
   Section   Section  @relation(fields: [sectionId], references: [id])
   Staff     Staff    @relation(fields: [staffId], references: [id])
   Subject   Subject  @relation(fields: [subjectId], references: [id])
@@ -862,7 +862,7 @@ model User {
   lastLoginAt                      DateTime?
   lastLoginIp                      String?
   createdAt                        DateTime       @default(now())
-  updatedAt                        DateTime
+  updatedAt                        DateTime            @default(now())
   deletedAt                        DateTime?
   Account                          Account[]
   Announcement                     Announcement[]
@@ -892,7 +892,7 @@ model Vehicle {
   driverId     String?       @unique
   status       VehicleStatus @default(ACTIVE)
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime            @default(now())
   Route        Route[]
   Driver       Driver?       @relation(fields: [driverId], references: [id])
   School       School        @relation(fields: [schoolId], references: [id])

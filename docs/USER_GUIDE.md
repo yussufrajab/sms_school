@@ -35,7 +35,7 @@ The School Management System (SMS) is a comprehensive platform designed to strea
 
 ### Logging In
 
-1. Navigate to your school's SMS URL (e.g., `https://yourschool.edu/sms`)
+1. Navigate to your school's SMS URL (e.g., `http://localhost:3000`)
 2. Enter your registered email address
 3. Enter your password
 4. Click "Sign In"
@@ -1001,7 +1001,7 @@ IT Admins manage technical aspects and system configuration.
 
 ### Support Contacts
 
-- **Technical Support**: support@yourschool.edu
+- **Technical Support**: support@baraka.sc.tz
 - **Phone**: +1-XXX-XXX-XXXX
 - **Help Desk**: Available during school hours
 
@@ -1009,7 +1009,7 @@ IT Admins manage technical aspects and system configuration.
 
 We value your feedback! Send suggestions and report issues through:
 - In-app feedback form
-- Email to feedback@yourschool.edu
+- Email to feedback@baraka.sc.tz
 - Suggestion box at reception
 
 ---
