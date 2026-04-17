@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import { cn } from "@/lib/utils";
+import { cn, getRoleGradient, getRoleColor, getRoleBg } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
   Library,
   Bus,
   Bell,
+  BellRing,
   Calendar,
   BarChart3,
   Settings,
@@ -127,6 +128,7 @@ const navItems: NavItem[] = [
     children: [
       { label: "Announcements", href: "/communication/announcements", icon: Bell, roles: ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER", "STUDENT", "PARENT"] },
       { label: "Messages", href: "/communication/messages", icon: MessageSquare, roles: ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER", "STUDENT", "PARENT"] },
+      { label: "Notifications", href: "/communication/notifications", icon: BellRing, roles: ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER", "STUDENT", "PARENT", "ACCOUNTANT", "LIBRARIAN", "RECEPTIONIST", "IT_ADMIN"] },
       { label: "Events", href: "/communication/events", icon: Calendar, roles: ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER", "STUDENT", "PARENT"] },
     ],
   },
@@ -174,20 +176,24 @@ export function Sidebar({ userRole }: SidebarProps) {
     return pathname.startsWith(href);
   };
 
+  const roleGradient = getRoleGradient(userRole);
+  const roleColor = getRoleColor(userRole);
+  const roleBg = getRoleBg(userRole);
+
   return (
     <aside
       className={cn(
-        "relative flex flex-col h-full bg-card border-r border-border transition-all duration-300",
+        "relative flex flex-col h-full bg-white border-r border-slate-200 transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
-      {/* Logo */}
-      <div className="flex items-center h-16 px-4 border-b border-border">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground flex-shrink-0">
+      {/* Logo — role gradient banner */}
+      <div className={cn("flex items-center h-16 px-4 bg-gradient-to-r", roleGradient)}>
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm text-white flex-shrink-0">
           <GraduationCap className="w-5 h-5" />
         </div>
         {!collapsed && (
-          <span className="ml-3 font-semibold text-sm truncate">
+          <span className="ml-3 font-semibold text-sm text-white truncate">
             School MS
           </span>
         )}
@@ -210,11 +216,11 @@ export function Sidebar({ userRole }: SidebarProps) {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                       active
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        ? "bg-indigo-50 text-indigo-600 border-l-2 border-indigo-500"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     )}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <Icon className={cn("w-4 h-4 flex-shrink-0", active ? "text-indigo-500" : "text-slate-400")} />
                     {!collapsed && (
                       <>
                         <span className="flex-1 text-left">{item.label}</span>
@@ -238,11 +244,11 @@ export function Sidebar({ userRole }: SidebarProps) {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                       active
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        ? "bg-indigo-50 text-indigo-600 border-l-2 border-indigo-500"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     )}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <Icon className={cn("w-4 h-4 flex-shrink-0", active ? "text-indigo-500" : "text-slate-400")} />
                     {!collapsed && (
                       <>
                         <span className="flex-1">{item.label}</span>
@@ -258,7 +264,7 @@ export function Sidebar({ userRole }: SidebarProps) {
 
                 {/* Children */}
                 {hasChildren && isExpanded && !collapsed && (
-                  <div className="ml-4 mt-1 space-y-1 border-l border-border pl-3">
+                  <div className="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
                     {item.children!
                       .filter((child) => child.roles.includes(userRole))
                       .map((child) => {
@@ -271,11 +277,11 @@ export function Sidebar({ userRole }: SidebarProps) {
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
                               childActive
-                                ? "bg-primary/10 text-primary font-medium"
-                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                ? "bg-indigo-50 text-indigo-600 font-medium"
+                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                             )}
                           >
-                            <ChildIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                            <ChildIcon className={cn("w-3.5 h-3.5 flex-shrink-0", childActive ? "text-indigo-500" : "text-slate-400")} />
                             <span>{child.label}</span>
                           </Link>
                         );
@@ -289,12 +295,12 @@ export function Sidebar({ userRole }: SidebarProps) {
       </ScrollArea>
 
       {/* Collapse toggle */}
-      <div className="p-2 border-t border-border">
+      <div className="p-2 border-t border-slate-200">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center"
+          className="w-full justify-center text-slate-500 hover:text-slate-700"
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />

@@ -26,11 +26,18 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20")));
   const isRead = searchParams.get("isRead"); // "true" | "false" | null
   const type = searchParams.get("type") ?? ""; // NotificationType value
+  const search = searchParams.get("search") ?? "";
 
   const where: Record<string, unknown> = {
     userId: session.user.id,
     ...(isRead === "true" ? { isRead: true } : isRead === "false" ? { isRead: false } : {}),
     ...(type ? { type: type as NotificationType } : {}),
+    ...(search ? {
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { message: { contains: search, mode: "insensitive" } },
+      ],
+    } : {}),
   };
 
   try {
@@ -146,6 +153,78 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("[PATCH /api/notifications]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+const deleteSchema = z.union([
+  z.object({
+    ids: z.array(z.string().min(1)).min(1, "At least one notification ID is required"),
+  }),
+  z.object({
+    deleteAllRead: z.literal(true),
+  }),
+]);
+
+export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const parsed = deleteSchema.parse(body);
+
+    if ("ids" in parsed && parsed.ids) {
+      // Verify ownership
+      const ownedCount = await prisma.notification.count({
+        where: {
+          id: { in: parsed.ids },
+          userId: session.user.id,
+        },
+      });
+
+      if (ownedCount !== parsed.ids.length) {
+        return NextResponse.json(
+          { error: "One or more notification IDs are invalid or do not belong to you" },
+          { status: 403 }
+        );
+      }
+
+      const result = await prisma.notification.deleteMany({
+        where: {
+          id: { in: parsed.ids },
+          userId: session.user.id,
+        },
+      });
+
+      return NextResponse.json({
+        message: `Deleted ${result.count} notification(s)`,
+        count: result.count,
+      });
+    }
+
+    if ("deleteAllRead" in parsed && parsed.deleteAllRead) {
+      const result = await prisma.notification.deleteMany({
+        where: {
+          userId: session.user.id,
+          isRead: true,
+        },
+      });
+
+      return NextResponse.json({
+        message: `Deleted ${result.count} read notification(s)`,
+        count: result.count,
+      });
+    }
+
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+    console.error("[DELETE /api/notifications]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
