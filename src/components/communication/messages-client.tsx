@@ -134,7 +134,7 @@ export function MessagesClient({
   const filteredConversations = conversations().filter(
     (c) =>
       c.user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      c.user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Mark messages as read

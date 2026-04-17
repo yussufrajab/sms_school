@@ -447,7 +447,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                 <div>
                   <p className="text-sm text-muted-foreground">Outstanding Fines</p>
                   <p className="text-2xl font-bold text-red-600">
-                    ${data.fines.totalOutstanding.toFixed(2)}
+                    ${(data.fines?.totalOutstanding ?? 0).toFixed(2)}
                   </p>
                 </div>
                 <DollarSign className="h-8 w-8 text-red-500" />
@@ -456,7 +456,7 @@ export function LibrarianDashboard({ user, data }: LibrarianDashboardProps) {
                 <div>
                   <p className="text-sm text-muted-foreground">Collected This Month</p>
                   <p className="text-2xl font-bold text-green-600">
-                    ${data.fines.collectedThisMonth.toFixed(2)}
+                    ${(data.fines?.collectedThisMonth ?? 0).toFixed(2)}
                   </p>
                 </div>
                 <DollarSign className="h-8 w-8 text-green-500" />

@@ -337,7 +337,7 @@ export default function AssignmentsListClient({
                             STATUS_COLORS[assignment.status]
                           }`}
                         >
-                          {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
+                          {((assignment.status ?? "").charAt(0).toUpperCase() + (assignment.status ?? "").slice(1))}
                         </span>
                       )}
                     </div>
@@ -345,11 +345,11 @@ export default function AssignmentsListClient({
                     <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-2">
                       <span className="flex items-center gap-1">
                         <FileText className="h-4 w-4" />
-                        {assignment.subject.name}
+                        {assignment.subject?.name ?? "N/A"}
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
-                        {assignment.section.class.name} - {assignment.section.name}
+                        {assignment.section?.class?.name ?? "N/A"} - {assignment.section?.name ?? "N/A"}
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />

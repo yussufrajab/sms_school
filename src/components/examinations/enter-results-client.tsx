@@ -326,7 +326,7 @@ export function EnterResultsClient({ academicYears, sections }: EnterResultsClie
                 <SelectContent>
                   {examSubjects.map((es) => (
                     <SelectItem key={es.id} value={es.id}>
-                      {es.subject.name} - {es.section.class.name} {es.section.name}
+                      {es.subject?.name ?? "N/A"} - {es.section?.class?.name ?? "N/A"} {es.section?.name ?? "N/A"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -354,7 +354,7 @@ export function EnterResultsClient({ academicYears, sections }: EnterResultsClie
               Enter Marks
               {selectedSubjectData && (
                 <span className="text-muted-foreground font-normal ml-2">
-                  ({selectedSubjectData.subject.name} - {selectedSubjectData.section.class.name} {selectedSubjectData.section.name})
+                  ({selectedSubjectData.subject?.name ?? "N/A"} - {selectedSubjectData.section?.class?.name ?? "N/A"} {selectedSubjectData.section?.name ?? "N/A"})
                 </span>
               )}
             </CardTitle>

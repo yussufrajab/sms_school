@@ -363,10 +363,11 @@ export function PayrollClient({
   };
 
   const filteredPayrolls = payrolls.filter((payroll) => {
+    if (!search) return true;
     const searchLower = search.toLowerCase();
     const matchesSearch =
-      monthNames[payroll.month - 1].toLowerCase().includes(searchLower) ||
-      payroll.academicYear.toLowerCase().includes(searchLower) ||
+      monthNames[payroll.month - 1]?.toLowerCase().includes(searchLower) ||
+      payroll.academicYear?.toLowerCase().includes(searchLower) ||
       String(payroll.year).includes(searchLower);
     return matchesSearch;
   });

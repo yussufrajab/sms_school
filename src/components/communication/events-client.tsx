@@ -498,7 +498,7 @@ export function EventsClient({ initialEvents, userRole, canManage }: EventsClien
               <div className="space-y-3">
                 {upcomingEvents.map((event) => (
                   <div key={event.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${categoryColors[event.category].split(" ")[0]}`} />
+                    <div className={`w-2 h-2 rounded-full mt-2 ${(categoryColors[event.category] ?? "").split(" ")[0]}`} />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{event.title}</p>
                       <p className="text-xs text-muted-foreground">

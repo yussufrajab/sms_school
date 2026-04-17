@@ -317,9 +317,9 @@ export function TeachingAssignmentsClient({
   const filteredAssignments = assignments.filter((a) => {
     const matchesSearch =
       searchTerm === "" ||
-      `${a.staff.firstName} ${a.staff.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${a.section.class.name} - ${a.section.name}`.toLowerCase().includes(searchTerm.toLowerCase());
+      `${a.staff?.firstName ?? ""} ${a.staff?.lastName ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.subject?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${a.section?.class?.name ?? ""} - ${a.section?.name ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStaff = filterStaff === "" || a.staffId === filterStaff;
     const matchesSubject = filterSubject === "" || a.subjectId === filterSubject;

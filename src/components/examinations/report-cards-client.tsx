@@ -204,7 +204,7 @@ export function ReportCardsClient({ academicYears, sections }: ReportCardsClient
           <table>
             <tr><td>Student Name:</td><td>${card.student.firstName} ${card.student.lastName}</td></tr>
             <tr><td>Student ID:</td><td>${card.student.studentId}</td></tr>
-            <tr><td>Class:</td><td>${card.student.section.class.name} - ${card.student.section.name}</td></tr>
+            <tr><td>Class:</td><td>${card.student.section?.class?.name ?? "N/A"} - ${card.student.section?.name ?? "N/A"}</td></tr>
             <tr><td>Exam:</td><td>${card.exam.name}</td></tr>
           </table>
         </div>
@@ -416,7 +416,7 @@ export function ReportCardsClient({ academicYears, sections }: ReportCardsClient
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Class</div>
-                <div>{selectedStudent.student.section.class.name} - {selectedStudent.student.section.name}</div>
+                <div>{selectedStudent.student.section?.class?.name ?? "N/A"} - {selectedStudent.student.section?.name ?? "N/A"}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Percentage</div>

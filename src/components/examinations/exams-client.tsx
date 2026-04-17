@@ -581,9 +581,9 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                   <TableBody>
                     {examSubjects.map((es) => (
                       <TableRow key={es.id}>
-                        <TableCell className="font-medium">{es.subject.name}</TableCell>
+                        <TableCell className="font-medium">{es.subject?.name ?? "N/A"}</TableCell>
                         <TableCell>
-                          {es.section.class.name} - {es.section.name}
+                          {es.section?.class?.name ?? "N/A"} - {es.section?.name ?? "N/A"}
                         </TableCell>
                         <TableCell>
                           {es.maxMarks}/{es.passMark}

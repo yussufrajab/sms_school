@@ -115,7 +115,7 @@ export default async function StudentDashboardPage() {
       period: s.periodNo,
       subject: s.Subject.name,
       time: `${s.startTime} - ${s.endTime}`,
-      teacher: s.Staff.firstName + " " + s.Staff.lastName,
+      teacher: s.Staff ? s.Staff.firstName + " " + s.Staff.lastName : "N/A",
     })),
     upcomingAssignments: upcomingAssignments.map(a => {
       const daysLeft = Math.ceil((a.dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
