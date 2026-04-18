@@ -2,7 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/health", "/_next", "/favicon.ico", "/public"];
+const PUBLIC_PATHS = ["/", "/login", "/api/auth", "/api/health", "/_next", "/favicon.ico", "/public"];
 
 const ROLE_PATHS: Record<string, string[]> = {
   "/dashboard/admin": ["SUPER_ADMIN", "SCHOOL_ADMIN", "IT_ADMIN"],

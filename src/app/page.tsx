@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -70,7 +72,10 @@ const roles = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Redirect authenticated users to dashboard
+  const session = await auth();
+  if (session?.user) redirect("/dashboard");
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
