@@ -33,12 +33,22 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sectionId = searchParams.get("sectionId");
   const subjectId = searchParams.get("subjectId");
+  const search = searchParams.get("search") ?? "";
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20")));
 
   try {
     const where: Record<string, unknown> = {};
 
     if (sectionId) where.sectionId = sectionId;
     if (subjectId) where.subjectId = subjectId;
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" as const } },
+        { description: { contains: search, mode: "insensitive" as const } },
+      ];
+    }
 
     // Scope to school for non-super-admins
     if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {
@@ -68,21 +78,26 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const assignments = await prisma.assignment.findMany({
-      where,
-      include: {
-        Subject: { select: { id: true, name: true, code: true } },
-        Section: {
-          select: {
-            id: true,
-            name: true,
-            Class: { select: { id: true, name: true } },
+    const [assignments, total] = await Promise.all([
+      prisma.assignment.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          Subject: { select: { id: true, name: true, code: true } },
+          Section: {
+            select: {
+              id: true,
+              name: true,
+              Class: { select: { id: true, name: true } },
+            },
           },
+          _count: { select: { AssignmentSubmission: true } },
         },
-        _count: { select: { AssignmentSubmission: true } },
-      },
-      orderBy: { dueDate: "desc" },
-    });
+        orderBy: { dueDate: "desc" },
+      }),
+      prisma.assignment.count({ where }),
+    ]);
 
     // Add submission status for students
     if (session.user.role === "STUDENT") {
@@ -122,11 +137,17 @@ export async function GET(req: NextRequest) {
             };
           })
         );
-        return NextResponse.json(assignmentsWithStatus);
+        return NextResponse.json({
+          data: assignmentsWithStatus,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
       }
     }
 
-    return NextResponse.json(assignments);
+    return NextResponse.json({
+      data: assignments,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     console.error("[GET /api/assignments]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
