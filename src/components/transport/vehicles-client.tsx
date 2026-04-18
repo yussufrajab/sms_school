@@ -76,7 +76,7 @@ export default function VehiclesClient({
     model: "",
     year: new Date().getFullYear(),
     capacity: 40,
-    driverId: "",
+    driverId: "NONE",
   });
 
   const openCreateDialog = () => {
@@ -87,7 +87,7 @@ export default function VehiclesClient({
       model: "",
       year: new Date().getFullYear(),
       capacity: 40,
-      driverId: "",
+      driverId: "NONE",
     });
     setDialogOpen(true);
   };
@@ -100,7 +100,7 @@ export default function VehiclesClient({
       model: vehicle.model,
       year: vehicle.year,
       capacity: vehicle.capacity,
-      driverId: vehicle.driver?.id || "",
+      driverId: vehicle.driver?.id || "NONE",
     });
     setDialogOpen(true);
   };
@@ -121,7 +121,7 @@ export default function VehiclesClient({
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, driverId: formData.driverId === "NONE" ? null : formData.driverId }),
       });
 
       if (res.ok) {
@@ -346,7 +346,7 @@ export default function VehiclesClient({
                   <SelectValue placeholder="Select driver" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No driver</SelectItem>
+                  <SelectItem value="NONE">No driver</SelectItem>
                   {availableDrivers.map((driver) => (
                     <SelectItem key={driver.id} value={driver.id}>
                       {driver.firstName} {driver.lastName}

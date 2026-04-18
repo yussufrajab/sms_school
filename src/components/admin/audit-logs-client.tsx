@@ -133,8 +133,8 @@ export function AuditLogsClient() {
 
   // Filter states
   const [search, setSearch] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [entityTypeFilter, setEntityTypeFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState("ALL");
+  const [entityTypeFilter, setEntityTypeFilter] = useState("ALL");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -149,8 +149,8 @@ export function AuditLogsClient() {
       params.append("page", pagination.page.toString());
       params.append("limit", pagination.limit.toString());
       if (search) params.append("search", search);
-      if (actionFilter) params.append("action", actionFilter);
-      if (entityTypeFilter) params.append("entityType", entityTypeFilter);
+      if (actionFilter && actionFilter !== "ALL") params.append("action", actionFilter);
+      if (entityTypeFilter && entityTypeFilter !== "ALL") params.append("entityType", entityTypeFilter);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 
@@ -192,8 +192,8 @@ export function AuditLogsClient() {
     const params = new URLSearchParams();
     params.append("limit", "10000"); // Export all
     if (search) params.append("search", search);
-    if (actionFilter) params.append("action", actionFilter);
-    if (entityTypeFilter) params.append("entityType", entityTypeFilter);
+    if (actionFilter && actionFilter !== "ALL") params.append("action", actionFilter);
+    if (entityTypeFilter && entityTypeFilter !== "ALL") params.append("entityType", entityTypeFilter);
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
 
@@ -258,7 +258,7 @@ export function AuditLogsClient() {
                 <SelectValue placeholder="All Actions" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Actions</SelectItem>
+                <SelectItem value="ALL">All Actions</SelectItem>
                 {filters.actions.map((action) => (
                   <SelectItem key={action} value={action}>
                     {action.replace(/_/g, " ")}
@@ -272,7 +272,7 @@ export function AuditLogsClient() {
                 <SelectValue placeholder="All Entities" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Entities</SelectItem>
+                <SelectItem value="ALL">All Entities</SelectItem>
                 {filters.entityTypes.filter(Boolean).map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}

@@ -103,7 +103,7 @@ export default function TransportAssignmentsClient({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [selectedRouteId, setSelectedRouteId] = useState<string>("");
+  const [selectedRouteId, setSelectedRouteId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({
@@ -122,7 +122,7 @@ export default function TransportAssignmentsClient({
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (selectedRouteId) params.append("routeId", selectedRouteId);
+      if (selectedRouteId && selectedRouteId !== "ALL") params.append("routeId", selectedRouteId);
 
       const res = await fetch(`/api/transport/assignments?${params.toString()}`);
       if (res.ok) {
@@ -230,7 +230,7 @@ export default function TransportAssignmentsClient({
                   <SelectValue placeholder="All routes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All routes</SelectItem>
+                  <SelectItem value="ALL">All routes</SelectItem>
                   {routes.map((route) => (
                     <SelectItem key={route.id} value={route.id}>
                       {route.name} ({route.code})

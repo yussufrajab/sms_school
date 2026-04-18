@@ -139,10 +139,11 @@ function AddAssignmentForm({
 
   const onSubmit = async (data: AssignmentFormData) => {
     try {
+      const payload = { ...data, academicYearId: data.academicYearId === "NONE" ? undefined : data.academicYearId };
       const res = await fetch("/api/academic/teaching-assignments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -229,7 +230,7 @@ function AddAssignmentForm({
             <SelectValue placeholder="Select academic year" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None</SelectItem>
+            <SelectItem value="NONE">None</SelectItem>
             {academicYears.map((y) => (
               <SelectItem key={y.id} value={y.id}>
                 {y.name}
@@ -269,8 +270,8 @@ export function TeachingAssignmentsClient({
   const [deleteAssignment, setDeleteAssignment] = useState<TeachingAssignment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStaff, setFilterStaff] = useState("");
-  const [filterSubject, setFilterSubject] = useState("");
+  const [filterStaff, setFilterStaff] = useState("ALL");
+  const [filterSubject, setFilterSubject] = useState("ALL");
 
   const refreshData = async () => {
     try {
@@ -321,8 +322,8 @@ export function TeachingAssignmentsClient({
       a.subject?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       `${a.section?.class?.name ?? ""} - ${a.section?.name ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStaff = filterStaff === "" || a.staffId === filterStaff;
-    const matchesSubject = filterSubject === "" || a.subjectId === filterSubject;
+    const matchesStaff = filterStaff === "ALL" || a.staffId === filterStaff;
+    const matchesSubject = filterSubject === "ALL" || a.subjectId === filterSubject;
 
     return matchesSearch && matchesStaff && matchesSubject;
   });
@@ -447,7 +448,7 @@ export function TeachingAssignmentsClient({
             <SelectValue placeholder="Filter by teacher" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Teachers</SelectItem>
+            <SelectItem value="ALL">All Teachers</SelectItem>
             {staff.map((s) => (
               <SelectItem key={s.id} value={s.id}>
                 {s.firstName} {s.lastName}
@@ -460,7 +461,7 @@ export function TeachingAssignmentsClient({
             <SelectValue placeholder="Filter by subject" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Subjects</SelectItem>
+            <SelectItem value="ALL">All Subjects</SelectItem>
             {subjects.map((s) => (
               <SelectItem key={s.id} value={s.id}>
                 {s.name}

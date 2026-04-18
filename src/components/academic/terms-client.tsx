@@ -303,13 +303,13 @@ export function TermsClient({
   const [deleteTerm, setDeleteTerm] = useState<Term | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>(
-    academicYears.find((y) => y.isCurrent)?.id || ""
+    academicYears.find((y) => y.isCurrent)?.id || "ALL"
   );
 
   const refreshData = async () => {
     try {
       const res = await fetch(
-        `/api/academic/terms${selectedYear ? `?academicYearId=${selectedYear}` : ""}`
+        `/api/academic/terms${selectedYear && selectedYear !== "ALL" ? `?academicYearId=${selectedYear}` : ""}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -346,7 +346,7 @@ export function TermsClient({
     }
   };
 
-  const filteredTerms = selectedYear
+  const filteredTerms = selectedYear && selectedYear !== "ALL"
     ? terms.filter((t) => t.academicYearId === selectedYear)
     : terms;
 
@@ -395,7 +395,7 @@ export function TermsClient({
             <SelectValue placeholder="Filter by academic year" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Years</SelectItem>
+            <SelectItem value="ALL">All Years</SelectItem>
             {academicYears.map((year) => (
               <SelectItem key={year.id} value={year.id}>
                 {year.name}

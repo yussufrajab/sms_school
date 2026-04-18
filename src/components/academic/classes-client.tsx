@@ -24,6 +24,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,7 +42,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Building2, Users, Loader2, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Building2,
+  Users,
+  Loader2,
+  Pencil,
+  Trash2,
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 // Types
 interface ClassItem {
@@ -80,12 +101,21 @@ const sectionSchema = z.object({
 type ClassFormData = z.infer<typeof classSchema>;
 type SectionFormData = z.infer<typeof sectionSchema>;
 
-// Components
-function AddClassForm({
-  onSuccess,
-}: {
-  onSuccess: () => void;
-}) {
+// Info item helper
+function InfoItem({ label, value, icon }: { label: string; value: string | number | null | undefined; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 py-1.5">
+      {icon && <span className="text-muted-foreground mt-0.5">{icon}</span>}
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium">{value ?? "N/A"}</p>
+      </div>
+    </div>
+  );
+}
+
+// Add Class Form
+function AddClassForm({ onSuccess }: { onSuccess: () => void }) {
   const {
     register,
     handleSubmit,
@@ -123,47 +153,88 @@ function AddClassForm({
         <Input id="name" placeholder="e.g. Grade 10" {...register("name")} />
         {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="level">Level *</Label>
-        <Input
-          id="level"
-          type="number"
-          min={1}
-          placeholder="e.g. 10"
-          {...register("level", { valueAsNumber: true })}
-        />
+        <Input id="level" type="number" min={1} placeholder="e.g. 10" {...register("level", { valueAsNumber: true })} />
         {errors.level && <p className="text-xs text-destructive">{errors.level.message}</p>}
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Input id="description" placeholder="Optional description" {...register("description")} />
       </div>
-
       <div className="flex justify-end gap-3 pt-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
-            </>
-          ) : (
-            "Create Class"
-          )}
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</> : "Create Class"}
         </Button>
       </div>
     </form>
   );
 }
 
-function AddSectionForm({
-  classes,
-  onSuccess,
-}: {
-  classes: ClassItem[];
-  onSuccess: () => void;
-}) {
+// Edit Class Form
+function EditClassForm({ cls, onSuccess, onClose }: { cls: ClassItem; onSuccess: () => void; onClose: () => void }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ClassFormData>({
+    resolver: zodResolver(classSchema),
+    defaultValues: {
+      name: cls.name,
+      level: cls.level,
+      description: cls.description ?? "",
+    },
+  });
+
+  const onSubmit = async (data: ClassFormData) => {
+    try {
+      const res = await fetch(`/api/academic/classes/${cls.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to update class");
+      }
+
+      toast.success("Class updated successfully");
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update class");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="edit-name">Class Name *</Label>
+        <Input id="edit-name" {...register("name")} />
+        {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="edit-level">Level *</Label>
+        <Input id="edit-level" type="number" min={1} {...register("level", { valueAsNumber: true })} />
+        {errors.level && <p className="text-xs text-destructive">{errors.level.message}</p>}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="edit-description">Description</Label>
+        <Input id="edit-description" {...register("description")} />
+      </div>
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : "Update"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// Add Section Form
+function AddSectionForm({ classes, onSuccess }: { classes: ClassItem[]; onSuccess: () => void }) {
   const {
     register,
     handleSubmit,
@@ -201,46 +272,97 @@ function AddSectionForm({
       <div className="space-y-2">
         <Label>Select Class *</Label>
         <Select onValueChange={(v) => setValue("classId", v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a class" />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Select a class" /></SelectTrigger>
           <SelectContent>
             {classes.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name} (Level {c.level})
-              </SelectItem>
+              <SelectItem key={c.id} value={c.id}>{c.name} (Level {c.level})</SelectItem>
             ))}
           </SelectContent>
         </Select>
         {errors.classId && <p className="text-xs text-destructive">{errors.classId.message}</p>}
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="name">Section Name *</Label>
         <Input id="name" placeholder="e.g. A" {...register("name")} />
         {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="maxCapacity">Max Capacity</Label>
-        <Input
-          id="maxCapacity"
-          type="number"
-          min={1}
-          {...register("maxCapacity", { valueAsNumber: true })}
-        />
+        <Input id="maxCapacity" type="number" min={1} {...register("maxCapacity", { valueAsNumber: true })} />
       </div>
-
       <div className="flex justify-end gap-3 pt-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
-            </>
-          ) : (
-            "Create Section"
-          )}
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</> : "Create Section"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// Edit Section Form
+function EditSectionForm({ section, classes, onSuccess, onClose }: { section: Section; classes: ClassItem[]; onSuccess: () => void; onClose: () => void }) {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<{ name: string; maxCapacity: number; classId: string }>({
+    resolver: zodResolver(sectionSchema),
+    defaultValues: {
+      name: section.name,
+      maxCapacity: section.maxCapacity,
+      classId: section.class.id,
+    },
+  });
+
+  const onSubmit = async (data: { name: string; maxCapacity: number; classId: string }) => {
+    try {
+      const res = await fetch(`/api/academic/sections/${section.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to update section");
+      }
+
+      toast.success("Section updated successfully");
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update section");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Class *</Label>
+        <Select defaultValue={section.class.id} onValueChange={(v) => setValue("classId", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {classes.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name} (Level {c.level})</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.classId && <p className="text-xs text-destructive">{errors.classId.message}</p>}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="edit-section-name">Section Name *</Label>
+        <Input id="edit-section-name" {...register("name")} />
+        {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="edit-maxCapacity">Max Capacity</Label>
+        <Input id="edit-maxCapacity" type="number" min={1} {...register("maxCapacity", { valueAsNumber: true })} />
+      </div>
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : "Update"}
         </Button>
       </div>
     </form>
@@ -256,6 +378,13 @@ export function ClassesClient({
   const [sections, setSections] = useState(initialSections);
   const [addClassOpen, setAddClassOpen] = useState(false);
   const [addSectionOpen, setAddSectionOpen] = useState(false);
+  const [viewClass, setViewClass] = useState<ClassItem | null>(null);
+  const [editClass, setEditClass] = useState<ClassItem | null>(null);
+  const [deleteClass, setDeleteClass] = useState<ClassItem | null>(null);
+  const [editSection, setEditSection] = useState<Section | null>(null);
+  const [deleteSection, setDeleteSection] = useState<Section | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const refreshData = async () => {
     try {
@@ -263,12 +392,11 @@ export function ClassesClient({
         fetch("/api/academic/classes"),
         fetch("/api/academic/sections"),
       ]);
-      
+
       if (classesRes.ok) {
         const classesData = await classesRes.json();
         setClasses(classesData);
       }
-      
       if (sectionsRes.ok) {
         const sectionsData = await sectionsRes.json();
         setSections(sectionsData);
@@ -278,7 +406,52 @@ export function ClassesClient({
     }
   };
 
+  const handleDeleteClass = async () => {
+    if (!deleteClass) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/academic/classes/${deleteClass.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to delete class");
+      }
+      toast.success("Class deleted successfully");
+      setDeleteClass(null);
+      refreshData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete class");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSection = async () => {
+    if (!deleteSection) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/academic/sections/${deleteSection.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to delete section");
+      }
+      toast.success("Section deleted successfully");
+      setDeleteSection(null);
+      refreshData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete section");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const totalStudents = sections.reduce((sum, s) => sum + s._count.students, 0);
+  const filteredSections = search
+    ? sections.filter(
+        (s) =>
+          s.name.toLowerCase().includes(search.toLowerCase()) ||
+          s.class.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : sections;
 
   return (
     <div className="space-y-6">
@@ -307,13 +480,7 @@ export function ClassesClient({
                 <DialogHeader>
                   <DialogTitle>Add New Section</DialogTitle>
                 </DialogHeader>
-                <AddSectionForm
-                  classes={classes}
-                  onSuccess={() => {
-                    setAddSectionOpen(false);
-                    refreshData();
-                  }}
-                />
+                <AddSectionForm classes={classes} onSuccess={() => { setAddSectionOpen(false); refreshData(); }} />
               </DialogContent>
             </Dialog>
 
@@ -328,12 +495,7 @@ export function ClassesClient({
                 <DialogHeader>
                   <DialogTitle>Add New Class</DialogTitle>
                 </DialogHeader>
-                <AddClassForm
-                  onSuccess={() => {
-                    setAddClassOpen(false);
-                    refreshData();
-                  }}
-                />
+                <AddClassForm onSuccess={() => { setAddClassOpen(false); refreshData(); }} />
               </DialogContent>
             </Dialog>
           </div>
@@ -357,7 +519,11 @@ export function ClassesClient({
           </Card>
         ) : (
           classes.map((cls) => (
-            <Card key={cls.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={cls.id}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => setViewClass(cls)}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{cls.name}</CardTitle>
@@ -385,6 +551,17 @@ export function ClassesClient({
                     ))}
                   </div>
                 )}
+
+                {canManage && (
+                  <div className="flex gap-1 mt-3 pt-3 border-t">
+                    <Button variant="ghost" size="sm" className="h-7" onClick={(e) => { e.stopPropagation(); setEditClass(cls); }}>
+                      <Pencil className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteClass(cls); }}>
+                      <Trash2 className="w-3 h-3 mr-1" /> Delete
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))
@@ -393,8 +570,17 @@ export function ClassesClient({
 
       {/* Sections Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">All Sections</CardTitle>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search sections..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-8"
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -408,14 +594,14 @@ export function ClassesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sections.length === 0 ? (
+              {filteredSections.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No sections created yet
+                    No sections found
                   </TableCell>
                 </TableRow>
               ) : (
-                sections.map((section) => (
+                filteredSections.map((section) => (
                   <TableRow key={section.id}>
                     <TableCell className="font-medium">{section.name}</TableCell>
                     <TableCell>{section.class.name}</TableCell>
@@ -426,10 +612,10 @@ export function ClassesClient({
                     <TableCell className="text-right">
                       {canManage && (
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditSection(section)}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteSection(section)}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
@@ -442,6 +628,115 @@ export function ClassesClient({
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Class Dialog */}
+      <Dialog open={!!viewClass} onOpenChange={() => setViewClass(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Class Details</DialogTitle>
+          </DialogHeader>
+          {viewClass && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <InfoItem label="Name" value={viewClass.name} icon={<Building2 className="h-4 w-4" />} />
+                <InfoItem label="Level" value={viewClass.level} />
+                <InfoItem label="Sections" value={`${viewClass._count.sections}`} icon={<Building2 className="h-4 w-4" />} />
+                <InfoItem label="Total Students" value={`${viewClass.sections.reduce((s, sec) => s + sec._count.students, 0)}`} icon={<Users className="h-4 w-4" />} />
+              </div>
+              {viewClass.description && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Description</p>
+                  <p className="text-sm">{viewClass.description}</p>
+                </div>
+              )}
+              {viewClass.sections.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Sections</p>
+                  <div className="flex flex-wrap gap-2">
+                    {viewClass.sections.map((sec) => (
+                      <Badge key={sec.id} variant="secondary">
+                        {sec.name} ({sec._count.students} students)
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {canManage && (
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => { setViewClass(null); setEditClass(viewClass); }}>
+                    <Pencil className="w-4 h-4 mr-1" /> Edit
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => { setViewClass(null); setDeleteClass(viewClass); }}>
+                    <Trash2 className="w-4 h-4 mr-1" /> Delete
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Class Dialog */}
+      <Dialog open={!!editClass} onOpenChange={() => setEditClass(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Class</DialogTitle>
+          </DialogHeader>
+          {editClass && (
+            <EditClassForm cls={editClass} onSuccess={refreshData} onClose={() => setEditClass(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Class Dialog */}
+      <AlertDialog open={!!deleteClass} onOpenChange={() => setDeleteClass(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Class</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>&quot;{deleteClass?.name}&quot;</strong>? This action cannot be undone.
+              Classes with enrolled students cannot be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteClass} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Section Dialog */}
+      <Dialog open={!!editSection} onOpenChange={() => setEditSection(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Section</DialogTitle>
+          </DialogHeader>
+          {editSection && (
+            <EditSectionForm section={editSection} classes={classes} onSuccess={refreshData} onClose={() => setEditSection(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Section Dialog */}
+      <AlertDialog open={!!deleteSection} onOpenChange={() => setDeleteSection(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Section</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete section <strong>&quot;{deleteSection?.name}&quot;</strong> of <strong>{deleteSection?.class?.name}</strong>?
+              Sections with enrolled students cannot be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSection} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

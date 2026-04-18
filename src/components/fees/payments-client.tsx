@@ -77,7 +77,7 @@ interface PaymentsClientProps {
 export function PaymentsClient({ academicYears }: PaymentsClientProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [methodFilter, setMethodFilter] = useState<string>("");
+  const [methodFilter, setMethodFilter] = useState<string>("ALL");
 
   // Record payment form
   const [isRecordOpen, setIsRecordOpen] = useState(false);
@@ -103,7 +103,7 @@ export function PaymentsClient({ academicYears }: PaymentsClientProps) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (methodFilter) params.append("method", methodFilter);
+      if (methodFilter && methodFilter !== "ALL") params.append("method", methodFilter);
 
       const res = await fetch(`/api/finance/payments?${params}`);
       if (res.ok) {
@@ -270,7 +270,7 @@ export function PaymentsClient({ academicYears }: PaymentsClientProps) {
               <SelectValue placeholder="All methods" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Methods</SelectItem>
+              <SelectItem value="ALL">All Methods</SelectItem>
               <SelectItem value="CASH">Cash</SelectItem>
               <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
               <SelectItem value="STRIPE">Stripe</SelectItem>

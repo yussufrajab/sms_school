@@ -94,7 +94,7 @@ export default function RoutesClient({
     startPoint: "",
     endPoint: "",
     stopsText: "",
-    vehicleId: "",
+    vehicleId: "NONE",
   });
 
   const openCreateDialog = () => {
@@ -105,7 +105,7 @@ export default function RoutesClient({
       startPoint: "",
       endPoint: "",
       stopsText: "",
-      vehicleId: "",
+      vehicleId: "NONE",
     });
     setDialogOpen(true);
   };
@@ -118,7 +118,7 @@ export default function RoutesClient({
       startPoint: route.startPoint,
       endPoint: route.endPoint,
       stopsText: route.stops.map((s) => `${s.name}|${s.estimatedTime}`).join("\n"),
-      vehicleId: route.vehicleId || "",
+      vehicleId: route.vehicleId || "NONE",
     });
     setDialogOpen(true);
   };
@@ -160,7 +160,7 @@ export default function RoutesClient({
           startPoint: formData.startPoint,
           endPoint: formData.endPoint,
           stops,
-          vehicleId: formData.vehicleId || null,
+          vehicleId: formData.vehicleId === "NONE" ? null : formData.vehicleId,
         }),
       });
 
@@ -378,7 +378,7 @@ export default function RoutesClient({
                   <SelectValue placeholder="Select vehicle" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No vehicle</SelectItem>
+                  <SelectItem value="NONE">No vehicle</SelectItem>
                   {vehicles.map((vehicle) => (
                     <SelectItem key={vehicle.id} value={vehicle.id}>
                       {vehicle.registration} - {vehicle.make} {vehicle.model}
