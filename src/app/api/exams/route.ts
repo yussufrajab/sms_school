@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const academicYearId = searchParams.get("academicYearId");
   const termId = searchParams.get("termId");
+  const search = searchParams.get("search") ?? "";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20")));
 
@@ -42,6 +43,10 @@ export async function GET(req: NextRequest) {
 
   if (termId) {
     where.termId = termId;
+  }
+
+  if (search) {
+    where.name = { contains: search, mode: "insensitive" };
   }
 
   // Scope to school
