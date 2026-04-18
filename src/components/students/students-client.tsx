@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -26,12 +28,40 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Search, Filter, Download, Eye, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Droplets,
+  Flag,
+  AlertTriangle,
+  Users,
+} from "lucide-react";
 import { formatDate, getInitials } from "@/lib/utils";
 import { AddStudentForm } from "./add-student-form";
 
@@ -48,6 +78,12 @@ interface Student {
   studentId: string;
   gender: string;
   status: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  bloodGroup?: string;
+  address?: string;
+  phone?: string;
+  emergencyContact?: string;
   createdAt: string;
   section?: { name: string; class: { name: string } } | null;
   user?: { email: string };
@@ -76,8 +112,14 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
+  const [viewStudent, setViewStudent] = useState<Student | null>(null);
+  const [editStudent, setEditStudent] = useState<Student | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Student | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const canManage = ["SUPER_ADMIN", "SCHOOL_ADMIN", "RECEPTIONIST"].includes(userRole);
+  const canManage = ["SUPER_ADMIN", "SCHOOL_ADMIN", "RECEPTIONIST"].includes(
+    userRole
+  );
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -106,14 +148,58 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
     fetchStudents();
   }, [fetchStudents]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this student?")) return;
+  const handleDelete = async (student: Student) => {
     try {
-      await fetch(`/api/students/${id}`, { method: "DELETE" });
-      toast.success("Student deleted");
+      const res = await fetch(`/api/students/${student.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      toast.success(`${student.firstName} ${student.lastName} deleted`);
       fetchStudents();
     } catch {
       toast.error("Failed to delete student");
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editStudent) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/students/${editStudent.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: editStudent.firstName,
+          lastName: editStudent.lastName,
+          gender: editStudent.gender,
+          status: editStudent.status,
+          phone: editStudent.phone || undefined,
+          address: editStudent.address || undefined,
+          emergencyContact: editStudent.emergencyContact || undefined,
+          bloodGroup: editStudent.bloodGroup || undefined,
+          nationality: editStudent.nationality || undefined,
+          sectionId: editStudent.section?.name
+            ? sections.find(
+                (s) =>
+                  s.class.name === editStudent.section?.class?.name &&
+                  s.name === editStudent.section?.name
+              )?.id
+            : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to update");
+      }
+      toast.success("Student updated");
+      setEditStudent(null);
+      fetchStudents();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update student"
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -127,12 +213,10 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
         </div>
         {canManage && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Student
-              </Button>
-            </DialogTrigger>
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Student
+            </Button>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
@@ -158,11 +242,20 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
               <Input
                 placeholder="Search by name or student ID..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-9"
               />
             </div>
-            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-full sm:w-40">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Status" />
@@ -176,7 +269,13 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
                 <SelectItem value="EXPELLED">Expelled</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sectionFilter} onValueChange={(v) => { setSectionFilter(v); setPage(1); }}>
+            <Select
+              value={sectionFilter}
+              onValueChange={(v) => {
+                setSectionFilter(v);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Class/Section" />
               </SelectTrigger>
@@ -189,9 +288,6 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon">
-              <Download className="w-4 h-4" />
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -227,18 +323,27 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
                 ))
               ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-muted-foreground"
+                  >
                     No students found
                   </TableCell>
                 </TableRow>
               ) : (
                 students.map((student) => (
-                  <TableRow key={student.id} className="hover:bg-muted/50">
+                  <TableRow
+                    key={student.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => setViewStudent(student)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {getInitials(`${student.firstName} ${student.lastName}`)}
+                            {getInitials(
+                              `${student.firstName} ${student.lastName}`
+                            )}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -251,15 +356,22 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{student.studentId}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {student.studentId}
+                    </TableCell>
                     <TableCell className="text-sm">
                       {student.section
                         ? `${student.section.class.name} - ${student.section.name}`
                         : "—"}
                     </TableCell>
-                    <TableCell className="text-sm capitalize">{student.gender?.toLowerCase()}</TableCell>
+                    <TableCell className="text-sm capitalize">
+                      {student.gender?.toLowerCase()}
+                    </TableCell>
                     <TableCell>
-                      <Badge className={`text-xs ${statusColors[student.status] ?? ""}`} variant="outline">
+                      <Badge
+                        className={`text-xs ${statusColors[student.status] ?? ""}`}
+                        variant="outline"
+                      >
                         {student.status}
                       </Badge>
                     </TableCell>
@@ -267,20 +379,36 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
                       {formatDate(student.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <div
+                        className="flex items-center justify-end gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setViewStudent(student)}
+                          title="View details"
+                        >
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
                         {canManage && (
                           <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setEditStudent(student)}
+                              title="Edit student"
+                            >
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(student.id)}
+                              onClick={() => setDeleteConfirm(student)}
+                              title="Delete student"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
@@ -322,6 +450,378 @@ export function StudentsClient({ sections, userRole }: StudentsClientProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* View Student Dialog */}
+      <Dialog
+        open={!!viewStudent}
+        onOpenChange={(open) => !open && setViewStudent(null)}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {getInitials(
+                    `${viewStudent?.firstName ?? ""} ${viewStudent?.lastName ?? ""}`
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <span>
+                  {viewStudent?.firstName} {viewStudent?.lastName}
+                </span>
+                <p className="text-sm font-normal text-muted-foreground">
+                  {viewStudent?.studentId}
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          {viewStudent && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <InfoItem
+                  icon={Mail}
+                  label="Email"
+                  value={viewStudent.user?.email}
+                />
+                <InfoItem
+                  icon={User}
+                  label="Gender"
+                  value={viewStudent.gender?.toLowerCase()}
+                  capitalize
+                />
+                <InfoItem
+                  icon={Calendar}
+                  label="Date of Birth"
+                  value={
+                    viewStudent.dateOfBirth
+                      ? new Date(viewStudent.dateOfBirth).toLocaleDateString()
+                      : undefined
+                  }
+                />
+                <InfoItem
+                  icon={Flag}
+                  label="Nationality"
+                  value={viewStudent.nationality}
+                />
+                <InfoItem
+                  icon={Droplets}
+                  label="Blood Group"
+                  value={viewStudent.bloodGroup}
+                />
+                <InfoItem
+                  icon={Users}
+                  label="Class"
+                  value={
+                    viewStudent.section
+                      ? `${viewStudent.section.class.name} - ${viewStudent.section.name}`
+                      : undefined
+                  }
+                />
+                <InfoItem
+                  icon={Phone}
+                  label="Phone"
+                  value={viewStudent.phone}
+                />
+                <InfoItem
+                  icon={AlertTriangle}
+                  label="Emergency Contact"
+                  value={viewStudent.emergencyContact}
+                />
+                <InfoItem
+                  icon={MapPin}
+                  label="Address"
+                  value={viewStudent.address}
+                  className="col-span-2"
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <Badge
+                  className={`${statusColors[viewStudent.status] ?? ""}`}
+                  variant="outline"
+                >
+                  {viewStudent.status}
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  Enrolled {formatDate(viewStudent.createdAt)}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog
+        open={!!editStudent}
+        onOpenChange={(open) => !open && setEditStudent(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Edit {editStudent?.firstName} {editStudent?.lastName}
+            </DialogTitle>
+          </DialogHeader>
+          {editStudent && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>First Name</Label>
+                  <Input
+                    value={editStudent.firstName}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        firstName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input
+                    value={editStudent.lastName}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        lastName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Select
+                    value={editStudent.gender}
+                    onValueChange={(v) =>
+                      setEditStudent({ ...editStudent, gender: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={editStudent.status}
+                    onValueChange={(v) =>
+                      setEditStudent({ ...editStudent, status: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="GRADUATED">Graduated</SelectItem>
+                      <SelectItem value="TRANSFERRED">Transferred</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                      <SelectItem value="EXPELLED">Expelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nationality</Label>
+                  <Input
+                    value={editStudent.nationality ?? ""}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        nationality: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Blood Group</Label>
+                  <Select
+                    value={editStudent.bloodGroup ?? "NONE"}
+                    onValueChange={(v) =>
+                      setEditStudent({
+                        ...editStudent,
+                        bloodGroup: v === "NONE" ? undefined : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">Not specified</SelectItem>
+                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+                        (bg) => (
+                          <SelectItem key={bg} value={bg}>
+                            {bg}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    value={editStudent.phone ?? ""}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        phone: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Emergency Contact</Label>
+                  <Input
+                    value={editStudent.emergencyContact ?? ""}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        emergencyContact: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Class / Section</Label>
+                <Select
+                  value={
+                    editStudent.section
+                      ? sections.find(
+                          (s) =>
+                            s.class.name ===
+                              editStudent.section?.class?.name &&
+                            s.name === editStudent.section?.name
+                        )?.id ?? "NONE"
+                      : "NONE"
+                  }
+                  onValueChange={(v) => {
+                    if (v === "NONE") {
+                      setEditStudent({ ...editStudent, section: null });
+                    } else {
+                      const sec = sections.find((s) => s.id === v);
+                      if (sec) {
+                        setEditStudent({
+                          ...editStudent,
+                          section: {
+                            name: sec.name,
+                            class: { name: sec.class.name },
+                          },
+                        });
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class and section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Not assigned</SelectItem>
+                    {sections.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.class.name} - {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Textarea
+                  value={editStudent.address ?? ""}
+                  rows={2}
+                  onChange={(e) =>
+                    setEditStudent({
+                      ...editStudent,
+                      address: e.target.value || undefined,
+                    })
+                  }
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditStudent(null)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleEditSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete student?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete {deleteConfirm?.firstName}{" "}
+              {deleteConfirm?.lastName} ({deleteConfirm?.studentId}). This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteConfirm) handleDelete(deleteConfirm);
+                setDeleteConfirm(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function InfoItem({
+  icon: Icon,
+  label,
+  value,
+  capitalize,
+  className,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+  capitalize?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex items-start gap-2 text-sm ${className ?? ""}`}
+    >
+      <Icon className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+      <div>
+        <p className="text-muted-foreground text-xs">{label}</p>
+        <p className={capitalize ? "capitalize" : ""}>{value || "—"}</p>
+      </div>
     </div>
   );
 }
