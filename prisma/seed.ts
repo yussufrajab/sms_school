@@ -845,12 +845,12 @@ async function main() {
   console.log(`✅ ${allStaffForSalary.length} salary structures\n`);
 
   // Leave applications
-  const leaveData = [
-    { staffId: teacherStaffIds[0], type: "ANNUAL" as const, startDate: new Date("2025-07-01"), endDate: new Date("2025-07-10"), reason: "Likizo ya kawaida. Annual leave for family event.", status: "APPROVED" as const },
-    { staffId: teacherStaffIds[1], type: "SICK" as const, startDate: new Date("2025-05-15"), endDate: new Date("2025-05-17"), reason: "Ugonjwa. Feeling unwell, need rest.", status: "APPROVED" as const },
-    { staffId: teacherStaffIds[2], type: "EMERGENCY" as const, startDate: new Date(today), endDate: new Date(today.getTime() + 86400000 * 2), reason: "Dharura ya familia. Family emergency.", status: "PENDING" as const },
-    { staffId: teacherStaffIds[3], type: "ANNUAL" as const, startDate: new Date("2025-08-10"), endDate: new Date("2025-08-20"), reason: "Likizo ya kupumzika. Vacation.", status: "PENDING" as const },
-    { staffId: "staff-accountant", type: "SICK" as const, startDate: new Date("2025-04-01"), endDate: new Date("2025-04-02"), reason: "Maumivu ya kichwa. Headache.", status: "APPROVED" as const },
+  const leaveData: { staffId: string; type: "ANNUAL" | "SICK" | "EMERGENCY" | "MATERNITY" | "PATERNITY" | "UNPAID"; startDate: Date; endDate: Date; reason: string; status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" }[] = [
+    { staffId: teacherStaffIds[0], type: "ANNUAL", startDate: new Date("2025-07-01"), endDate: new Date("2025-07-10"), reason: "Likizo ya kawaida. Annual leave for family event.", status: "APPROVED" },
+    { staffId: teacherStaffIds[1], type: "SICK", startDate: new Date("2025-05-15"), endDate: new Date("2025-05-17"), reason: "Ugonjwa. Feeling unwell, need rest.", status: "APPROVED" },
+    { staffId: teacherStaffIds[2], type: "EMERGENCY", startDate: new Date(today), endDate: new Date(today.getTime() + 86400000 * 2), reason: "Dharura ya familia. Family emergency.", status: "PENDING" },
+    { staffId: teacherStaffIds[3], type: "ANNUAL", startDate: new Date("2025-08-10"), endDate: new Date("2025-08-20"), reason: "Likizo ya kupumzika. Vacation.", status: "PENDING" },
+    { staffId: "staff-accountant", type: "SICK", startDate: new Date("2025-04-01"), endDate: new Date("2025-04-02"), reason: "Maumivu ya kichwa. Headache.", status: "APPROVED" },
   ];
 
   for (let i = 0; i < leaveData.length; i++) {

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -18,8 +19,31 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  Calendar,
+  Clock,
+  BookOpen,
+  User,
+  MapPin,
+  Eye,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface TimetableEntry {
@@ -71,10 +95,9 @@ interface TimetableManageClientProps {
   staff: Staff[];
 }
 
-const DAYS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-// Color palette for subjects
 const SUBJECT_COLORS = [
   "bg-blue-100 border-blue-300 text-blue-800",
   "bg-green-100 border-green-300 text-green-800",
@@ -97,11 +120,19 @@ export default function TimetableManageClient({
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [subjectColorMap, setSubjectColorMap] = useState<Map<string, string>>(new Map());
+  const [showSaturday, setShowSaturday] = useState(false);
 
-  // Dialog state
+  // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteEntry, setDeleteEntry] = useState<TimetableEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [clearAllOpen, setClearAllOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  // View dialog
+  const [viewEntry, setViewEntry] = useState<TimetableEntry | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -114,7 +145,6 @@ export default function TimetableManageClient({
     classroom: "",
   });
 
-  // Fetch timetable when section changes
   useEffect(() => {
     if (selectedSectionId) {
       fetchTimetable(selectedSectionId);
@@ -132,6 +162,7 @@ export default function TimetableManageClient({
       }
     } catch (error) {
       console.error("Failed to fetch timetable:", error);
+      toast.error("Failed to load timetable");
     } finally {
       setLoading(false);
     }
@@ -157,14 +188,15 @@ export default function TimetableManageClient({
       staffId: "",
       dayOfWeek: day,
       periodNo: period,
-      startTime: "08:00",
-      endTime: "08:45",
+      startTime: period <= 4 ? `0${7 + period}:00` : `${7 + period}:00`,
+      endTime: period <= 4 ? `0${7 + period}:45` : `${7 + period}:45`,
       classroom: "",
     });
     setDialogOpen(true);
   };
 
   const openEditDialog = (entry: TimetableEntry) => {
+    setViewEntry(null);
     setEditingEntry(entry);
     setFormData({
       subjectId: entry.subject.id,
@@ -217,95 +249,171 @@ export default function TimetableManageClient({
       });
 
       if (res.ok) {
-        toast.success(
-          editingEntry ? "Timetable entry updated" : "Timetable entry created"
-        );
+        toast.success(editingEntry ? "Timetable entry updated" : "Timetable entry created");
         setDialogOpen(false);
         fetchTimetable(selectedSectionId);
       } else {
         const error = await res.json();
         toast.error(error.error || "Failed to save timetable entry");
       }
-    } catch (error) {
-      console.error("Failed to save:", error);
+    } catch {
       toast.error("Failed to save timetable entry");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (entry: TimetableEntry) => {
-    if (!confirm("Are you sure you want to delete this timetable entry?")) {
-      return;
-    }
-
+  const handleDelete = async () => {
+    if (!deleteEntry) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/timetable/${entry.id}`, {
-        method: "DELETE",
-      });
-
+      const res = await fetch(`/api/timetable/${deleteEntry.id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Timetable entry deleted");
+        setDeleteEntry(null);
         fetchTimetable(selectedSectionId);
       } else {
-        const error = await res.json();
-        toast.error(error.error || "Failed to delete");
+        toast.error("Failed to delete entry");
       }
-    } catch (error) {
-      console.error("Failed to delete:", error);
+    } catch {
       toast.error("Failed to delete timetable entry");
+    } finally {
+      setDeleting(false);
     }
   };
 
+  const handleClearAll = async () => {
+    if (!selectedSectionId) return;
+    setClearing(true);
+    try {
+      // Delete all entries for this section one by one
+      const entries = timetable.filter((e) => e.section.id === selectedSectionId);
+      await Promise.all(
+        entries.map((entry) =>
+          fetch(`/api/timetable/${entry.id}`, { method: "DELETE" })
+        )
+      );
+      toast.success(`Cleared ${entries.length} timetable entries`);
+      setClearAllOpen(false);
+      fetchTimetable(selectedSectionId);
+    } catch {
+      toast.error("Failed to clear timetable");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const activeDays = showSaturday ? DAYS.slice(1, 7) : DAYS.slice(1, 6);
+  const selectedSection = classes
+    .flatMap((c) => c.sections.map((s) => ({ ...s, className: c.name })))
+    .find((s) => s.id === selectedSectionId);
+
+  const uniqueSubjects = new Set(timetable.map((e) => e.subject.id));
+  const uniqueTeachers = new Set(timetable.map((e) => e.staff.id));
+
   return (
     <div className="space-y-6">
-      {/* Section Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Select Section</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Class & Section
-              </label>
-              <Select value={selectedSectionId} onValueChange={setSelectedSectionId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((cls) =>
-                    cls.sections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {cls.name} - {section.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Header & Section Selection */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Class & Section</label>
+            <Select value={selectedSectionId} onValueChange={setSelectedSectionId}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Select a section" />
+              </SelectTrigger>
+              <SelectContent>
+                {classes.map((cls) =>
+                  cls.sections.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {cls.name} - {section.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex items-center gap-2 pb-1">
+            <Switch checked={showSaturday} onCheckedChange={setShowSaturday} />
+            <Label className="text-sm">Show Saturday</Label>
+          </div>
+        </div>
+
+        {selectedSectionId && timetable.length > 0 && (
+          <Button variant="outline" className="text-destructive" onClick={() => setClearAllOpen(true)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear All
+          </Button>
+        )}
+      </div>
+
+      {/* Stats */}
+      {selectedSectionId && !loading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Entries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{timetable.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Subjects</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-blue-600">{uniqueSubjects.size}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Teachers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-600">{uniqueTeachers.size}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Coverage</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {activeDays.length * PERIODS.length > 0
+                  ? Math.round((timetable.length / (activeDays.length * PERIODS.length)) * 100)
+                  : 0}%
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Timetable Grid */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
-            {selectedSectionId ? "Manage Schedule" : "Weekly Schedule"}
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            {selectedSectionId
+              ? `${selectedSection?.className ?? ""} - ${selectedSection?.name ?? ""} Schedule`
+              : "Weekly Schedule"}
           </CardTitle>
-          <p className="text-sm text-gray-500">
-            Click on an empty slot to add a period, or click on an existing period to edit
+          <p className="text-sm text-muted-foreground">
+            {selectedSectionId
+              ? "Click an empty slot to add, or click a period to view/edit"
+              : "Select a section to manage timetable"}
           </p>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
             </div>
           ) : !selectedSectionId ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-muted-foreground">
               Select a section to manage timetable
             </div>
           ) : (
@@ -316,7 +424,7 @@ export default function TimetableManageClient({
                     <th className="border border-gray-300 bg-gray-100 px-3 py-2 text-left text-sm font-medium">
                       Period
                     </th>
-                    {DAYS.slice(1, 6).map((day) => (
+                    {activeDays.map((day) => (
                       <th
                         key={day}
                         className="border border-gray-300 bg-gray-100 px-3 py-2 text-center text-sm font-medium min-w-[150px]"
@@ -330,51 +438,60 @@ export default function TimetableManageClient({
                   {PERIODS.map((period) => (
                     <tr key={period}>
                       <td className="border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium">
-                        Period {period}
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          Period {period}
+                        </div>
                       </td>
-                      {DAYS.slice(1, 6).map((_, dayIndex) => {
-                        const entry = getEntry(dayIndex + 1, period);
+                      {activeDays.map((_, dayIndex) => {
+                        const dayNum = dayIndex + 1;
+                        const entry = getEntry(dayNum, period);
                         return (
-                          <td
-                            key={dayIndex}
-                            className="border border-gray-300 px-2 py-2"
-                          >
+                          <td key={dayIndex} className="border border-gray-300 px-2 py-2">
                             {entry ? (
                               <div
-                                className={`rounded-md p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity group ${
+                                className={`rounded-md p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity group border ${
                                   subjectColorMap.get(entry.subject.id) ||
                                   "bg-gray-100 border-gray-300"
                                 }`}
-                                onClick={() => openEditDialog(entry)}
+                                onClick={() => setViewEntry(entry)}
                               >
                                 <div className="font-semibold">{entry.subject.name}</div>
                                 <div className="mt-1 opacity-80">
                                   {entry.staff.firstName} {entry.staff.lastName}
                                 </div>
                                 {entry.classroom && (
-                                  <div className="mt-1 opacity-70">
-                                    Room: {entry.classroom}
+                                  <div className="mt-1 opacity-70 flex items-center gap-1">
+                                    <MapPin className="h-2.5 w-2.5" />
+                                    {entry.classroom}
                                   </div>
                                 )}
                                 <div className="mt-1 opacity-60">
                                   {entry.startTime} - {entry.endTime}
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mt-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 float-right"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(entry);
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3 text-red-500" />
-                                </Button>
+                                <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-5 p-0"
+                                    onClick={(e) => { e.stopPropagation(); openEditDialog(entry); }}
+                                  >
+                                    <Pencil className="h-2.5 w-2.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-5 p-0 text-red-500"
+                                    onClick={(e) => { e.stopPropagation(); setDeleteEntry(entry); }}
+                                  >
+                                    <Trash2 className="h-2.5 w-2.5" />
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <button
                                 className="w-full text-center text-gray-400 text-xs py-4 hover:bg-gray-50 rounded transition-colors"
-                                onClick={() => openAddDialog(dayIndex + 1, period)}
+                                onClick={() => openAddDialog(dayNum, period)}
                               >
                                 <Plus className="h-4 w-4 mx-auto" />
                               </button>
@@ -391,54 +508,121 @@ export default function TimetableManageClient({
         </CardContent>
       </Card>
 
+      {/* Subject Legend */}
+      {timetable.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Subject Legend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {Array.from(subjectColorMap.entries()).map(([subjectId, color]) => {
+                const entry = timetable.find((e) => e.subject.id === subjectId);
+                const count = timetable.filter((e) => e.subject.id === subjectId).length;
+                return (
+                  <div key={subjectId} className={`px-3 py-1 rounded-md text-sm border ${color}`}>
+                    {entry?.subject.name} ({count})
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* View Entry Dialog */}
+      <Dialog open={!!viewEntry} onOpenChange={() => setViewEntry(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Period Details</DialogTitle>
+          </DialogHeader>
+          {viewEntry && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-start gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Subject</p>
+                    <p className="text-sm font-medium">{viewEntry.subject.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Teacher</p>
+                    <p className="text-sm font-medium">{viewEntry.staff.firstName} {viewEntry.staff.lastName}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Day</p>
+                    <p className="text-sm font-medium">{DAYS[viewEntry.dayOfWeek]}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Time</p>
+                    <p className="text-sm font-medium">Period {viewEntry.periodNo} ({viewEntry.startTime} - {viewEntry.endTime})</p>
+                  </div>
+                </div>
+                {viewEntry.classroom && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Classroom</p>
+                      <p className="text-sm font-medium">{viewEntry.classroom}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Class</p>
+                    <p className="text-sm font-medium">{viewEntry.section.class.name} - {viewEntry.section.name}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => { const e = viewEntry; setViewEntry(null); openEditDialog(e); }}>
+                  <Pencil className="w-4 h-4 mr-1" /> Edit
+                </Button>
+                <Button variant="outline" size="sm" className="text-destructive" onClick={() => { const e = viewEntry; setViewEntry(null); setDeleteEntry(e); }}>
+                  <Trash2 className="w-4 h-4 mr-1" /> Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingEntry ? "Edit Period" : "Add Period"}
-            </DialogTitle>
+            <DialogTitle>{editingEntry ? "Edit Period" : "Add Period"}</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Day</Label>
-                <Select
-                  value={formData.dayOfWeek.toString()}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, dayOfWeek: parseInt(v) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={formData.dayOfWeek.toString()} onValueChange={(v) => setFormData({ ...formData, dayOfWeek: parseInt(v) })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DAYS.slice(1, 6).map((day, index) => (
-                      <SelectItem key={day} value={(index + 1).toString()}>
-                        {day}
-                      </SelectItem>
+                    {activeDays.map((day, index) => (
+                      <SelectItem key={day} value={(index + 1).toString()}>{day}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label>Period</Label>
-                <Select
-                  value={formData.periodNo.toString()}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, periodNo: parseInt(v) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={formData.periodNo.toString()} onValueChange={(v) => setFormData({ ...formData, periodNo: parseInt(v) })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PERIODS.map((p) => (
-                      <SelectItem key={p} value={p.toString()}>
-                        Period {p}
-                      </SelectItem>
+                      <SelectItem key={p} value={p.toString()}>Period {p}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -446,38 +630,24 @@ export default function TimetableManageClient({
             </div>
 
             <div>
-              <Label>Subject</Label>
-              <Select
-                value={formData.subjectId}
-                onValueChange={(v) => setFormData({ ...formData, subjectId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
+              <Label>Subject *</Label>
+              <Select value={formData.subjectId} onValueChange={(v) => setFormData({ ...formData, subjectId: v })}>
+                <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
                 <SelectContent>
                   {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name} ({subject.code})
-                    </SelectItem>
+                    <SelectItem key={subject.id} value={subject.id}>{subject.name} ({subject.code})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label>Teacher</Label>
-              <Select
-                value={formData.staffId}
-                onValueChange={(v) => setFormData({ ...formData, staffId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select teacher" />
-                </SelectTrigger>
+              <Label>Teacher *</Label>
+              <Select value={formData.staffId} onValueChange={(v) => setFormData({ ...formData, staffId: v })}>
+                <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
                 <SelectContent>
                   {staff.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.firstName} {s.lastName}
-                    </SelectItem>
+                    <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -486,43 +656,22 @@ export default function TimetableManageClient({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Start Time</Label>
-                <Input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                />
+                <Input type="time" value={formData.startTime} onChange={(e) => setFormData({ ...formData, startTime: e.target.value })} />
               </div>
-
               <div>
                 <Label>End Time</Label>
-                <Input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                />
+                <Input type="time" value={formData.endTime} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} />
               </div>
             </div>
 
             <div>
               <Label>Classroom (Optional)</Label>
-              <Input
-                placeholder="e.g., Room 101"
-                value={formData.classroom}
-                onChange={(e) =>
-                  setFormData({ ...formData, classroom: e.target.value })
-                }
-              />
+              <Input placeholder="e.g., Room 101" value={formData.classroom} onChange={(e) => setFormData({ ...formData, classroom: e.target.value })} />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editingEntry ? "Update" : "Create"}
@@ -530,6 +679,42 @@ export default function TimetableManageClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Entry Confirmation */}
+      <AlertDialog open={!!deleteEntry} onOpenChange={() => setDeleteEntry(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Timetable Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <strong>{deleteEntry?.subject?.name}</strong> ({DAYS[deleteEntry?.dayOfWeek ?? 0]} Period {deleteEntry?.periodNo}) from the schedule?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Confirmation */}
+      <AlertDialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Timetable Entries</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all {timetable.length} timetable entries for this section. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAll} disabled={clearing} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {clearing ? "Clearing..." : "Clear All"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
