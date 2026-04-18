@@ -71,7 +71,7 @@ export function FeeStructuresClient({
   // Structure form
   const [isStructureOpen, setIsStructureOpen] = useState(false);
   const [structureCategoryId, setStructureCategoryId] = useState("");
-  const [structureClassId, setStructureClassId] = useState("");
+  const [structureClassId, setStructureClassId] = useState("ALL");
   const [structureAmount, setStructureAmount] = useState("");
   const [structureDueDay, setStructureDueDay] = useState("");
 
@@ -146,7 +146,7 @@ export function FeeStructuresClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           feeCategoryId: structureCategoryId,
-          classId: structureClassId || undefined,
+          classId: structureClassId === "ALL" ? undefined : structureClassId,
           academicYearId: selectedYear,
           amount: parseFloat(structureAmount),
           dueDay: structureDueDay ? parseInt(structureDueDay) : undefined,
@@ -291,7 +291,7 @@ export function FeeStructuresClient({
                       <SelectValue placeholder="All classes" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Classes</SelectItem>
+                      <SelectItem value="ALL">All Classes</SelectItem>
                       {classes.map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
