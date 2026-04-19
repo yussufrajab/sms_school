@@ -237,7 +237,7 @@ export function PaymentsClient({ academicYears }: PaymentsClientProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalCollected.toLocaleString()}</div>
+            <div className="text-2xl font-bold">TZS {totalCollected.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -247,7 +247,7 @@ export function PaymentsClient({ academicYears }: PaymentsClientProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${todayTotal.toLocaleString()}</div>
+            <div className="text-2xl font-bold">TZS {todayTotal.toLocaleString()}</div>
             <div className="text-sm text-muted-foreground">{todayPayments.length} payment(s)</div>
           </CardContent>
         </Card>
@@ -301,7 +301,7 @@ export function PaymentsClient({ academicYears }: PaymentsClientProps) {
                     {unpaidInvoices.map((inv) => (
                       <SelectItem key={inv.id} value={inv.id}>
                         {inv.invoiceNumber} - {inv.student.firstName} {inv.student.lastName} 
-                        (${(inv.totalAmount - inv.paidAmount).toLocaleString()} remaining)
+                        (TZS {(inv.totalAmount - inv.paidAmount).toLocaleString()} remaining)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -410,7 +410,7 @@ export function PaymentsClient({ academicYears }: PaymentsClientProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${payment.amount.toLocaleString()}
+                      TZS {payment.amount.toLocaleString()}
                     </TableCell>
                   </TableRow>
                 ))}

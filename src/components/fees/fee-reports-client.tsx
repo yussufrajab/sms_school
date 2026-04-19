@@ -143,7 +143,7 @@ export function FeeReportsClient({ academicYears }: FeeReportsClientProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${summary?.totalInvoiced.toLocaleString() || 0}
+                  TZS {summary?.totalInvoiced.toLocaleString() || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {summary?.invoiceCount || 0} invoices
@@ -160,7 +160,7 @@ export function FeeReportsClient({ academicYears }: FeeReportsClientProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ${summary?.totalCollected.toLocaleString() || 0}
+                  TZS {summary?.totalCollected.toLocaleString() || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {summary?.paidInvoiceCount || 0} fully paid
@@ -177,7 +177,7 @@ export function FeeReportsClient({ academicYears }: FeeReportsClientProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  ${summary?.totalPending.toLocaleString() || 0}
+                  TZS {summary?.totalPending.toLocaleString() || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {defaulters.length} defaulters
@@ -253,7 +253,7 @@ export function FeeReportsClient({ academicYears }: FeeReportsClientProps) {
                     {Object.entries(paymentMethods).map(([method, amount]) => (
                       <div key={method} className="flex justify-between items-center">
                         <span className="text-sm">{method.replace("_", " ")}</span>
-                        <span className="font-medium">${amount.toLocaleString()}</span>
+                        <span className="font-medium">TZS {amount.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -290,7 +290,7 @@ export function FeeReportsClient({ academicYears }: FeeReportsClientProps) {
                         />
                       </div>
                       <div className="w-24 text-right text-sm font-medium">
-                        ${data.collected.toLocaleString()}
+                        TZS {data.collected.toLocaleString()}
                       </div>
                     </div>
                   ))}
@@ -338,7 +338,7 @@ export function FeeReportsClient({ academicYears }: FeeReportsClientProps) {
                           {defaulter.student.section?.class.name} - {defaulter.student.section?.name}
                         </TableCell>
                         <TableCell className="text-right font-bold text-red-600">
-                          ${defaulter.totalDue.toLocaleString()}
+                          TZS {defaulter.totalDue.toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">{defaulter.invoiceCount}</Badge>
