@@ -72,7 +72,23 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(applications);
+    // Transform to lowercase for client compatibility
+    const transformed = applications.map((app) => ({
+      ...app,
+      staff: app.Staff
+        ? {
+            id: app.Staff.id,
+            firstName: app.Staff.firstName,
+            lastName: app.Staff.lastName,
+            employeeId: app.Staff.employeeId,
+            department: app.Staff.department,
+            designation: app.Staff.designation,
+            user: app.Staff.User,
+          }
+        : null,
+    }));
+
+    return NextResponse.json(transformed);
   } catch (error) {
     console.error("[GET /api/hr/leave]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

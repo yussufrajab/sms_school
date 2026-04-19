@@ -73,7 +73,11 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(assignment);
+    return NextResponse.json({
+      ...assignment,
+      subject: assignment?.Subject,
+      section: assignment ? { ...assignment.Section, class: assignment.Section.Class } : undefined,
+    });
   } catch (error) {
     console.error("[GET /api/assignments/[id]]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -161,7 +165,11 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(assignment);
+    return NextResponse.json({
+      ...assignment,
+      subject: assignment.Subject,
+      section: { ...assignment.Section, class: assignment.Section.Class },
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

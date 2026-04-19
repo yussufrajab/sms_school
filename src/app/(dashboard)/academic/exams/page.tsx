@@ -97,6 +97,7 @@ export default async function AcademicExamsPage() {
         <TabsContent value="reports">
           <ReportCardsClient
             academicYears={academicYears}
+            terms={terms}
             sections={transformedSections}
           />
         </TabsContent>

@@ -32,7 +32,14 @@ export async function GET(req: NextRequest) {
     orderBy: [{ Class: { level: "asc" } }, { name: "asc" }],
   });
 
-  return NextResponse.json(sections);
+  // Transform to lowercase for client compatibility
+  const transformed = sections.map((s) => ({
+    ...s,
+    class: s.Class,
+    _count: { students: s._count.Student },
+  }));
+
+  return NextResponse.json(transformed);
 }
 
 export async function POST(req: NextRequest) {
@@ -58,10 +65,17 @@ export async function POST(req: NextRequest) {
         maxCapacity: data.maxCapacity,
         updatedAt: new Date(),
       },
-      include: { Class: true },
+      include: { Class: true, _count: { select: { Student: true } } },
     });
 
-    return NextResponse.json(newSection, { status: 201 });
+    // Transform to lowercase for client compatibility
+    const transformed = {
+      ...newSection,
+      class: newSection.Class,
+      _count: { students: newSection._count.Student },
+    };
+
+    return NextResponse.json(transformed, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

@@ -227,8 +227,8 @@ export async function GET(
         exam: {
           id: exam.id,
           name: exam.name,
-          AcademicYear: exam.AcademicYear,
-          Term: exam.Term,
+          academicYear: exam.AcademicYear,
+          term: exam.Term,
         },
         subjects: subjectResults,
         summary: {
@@ -238,7 +238,7 @@ export async function GET(
           overallGrade,
           passed,
           failed,
-          status: failed === 0 && passed > 0 ? "PASS" : "FAIL",
+          status: percentage >= 40 ? "PASS" : "FAIL",
           rank: 0, // Will be set after sorting
         },
       };
@@ -256,8 +256,8 @@ export async function GET(
       exam: {
         id: exam.id,
         name: exam.name,
-        AcademicYear: exam.AcademicYear,
-        Term: exam.Term,
+        academicYear: exam.AcademicYear,
+        term: exam.Term,
         isPublished: exam.isPublished,
       },
       reportCards,

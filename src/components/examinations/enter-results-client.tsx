@@ -55,9 +55,13 @@ type Student = {
 
 type Result = {
   id: string;
-  marksObtained: number;
-  grade: string;
+  examSubjectId: string;
   studentId: string;
+  marksObtained: number;
+  grade: string | null;
+  remarks?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 interface EnterResultsClientProps {
@@ -148,25 +152,34 @@ export function EnterResultsClient({ academicYears, sections }: EnterResultsClie
       if (studentsRes.ok) {
         const data = await studentsRes.json();
         setStudents(data.data || []);
+      } else {
+        console.error("Failed to fetch students:", studentsRes.status);
+        toast.error("Failed to load students");
       }
 
       // Fetch existing results
       const resultsRes = await fetch(`/api/exams/${selectedExam}/results?examSubjectId=${selectedSubject}`);
       if (resultsRes.ok) {
         const data = await resultsRes.json();
+        console.log("Fetched results:", data);
         setExistingResults(data);
 
         // Initialize results state with existing data
         const initialResults: Record<string, { marks: string; remarks: string }> = {};
         data.forEach((r: Result) => {
           initialResults[r.studentId] = {
-            marks: r.marksObtained.toString(),
-            remarks: "",
+            marks: r.marksObtained?.toString() ?? "",
+            remarks: r.remarks ?? "",
           };
         });
+        console.log("Initial results state:", initialResults);
         setResults(initialResults);
+      } else {
+        console.error("Failed to fetch results:", resultsRes.status);
+        toast.error("Failed to load existing results");
       }
     } catch (error) {
+      console.error("Failed to load data:", error);
       toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -198,7 +211,10 @@ export function EnterResultsClient({ academicYears, sections }: EnterResultsClie
 
   const handleSaveResults = async () => {
     const examSubject = examSubjects.find((es) => es.id === selectedSubject);
-    if (!examSubject) return;
+    if (!examSubject) {
+      toast.error("Please select a subject first");
+      return;
+    }
 
     // Validate marks
     const invalidMarks = Object.entries(results).filter(([_, data]) => {
@@ -238,13 +254,17 @@ export function EnterResultsClient({ academicYears, sections }: EnterResultsClie
       });
 
       if (res.ok) {
+        const data = await res.json();
+        console.log("Save results response:", data);
         toast.success("Results saved successfully");
         fetchStudentsAndResults();
       } else {
         const error = await res.json();
+        console.error("Save results error:", error);
         toast.error(error.error || "Failed to save results");
       }
     } catch (error) {
+      console.error("Save results error:", error);
       toast.error("Failed to save results");
     } finally {
       setSaving(false);

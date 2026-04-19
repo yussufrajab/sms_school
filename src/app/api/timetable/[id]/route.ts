@@ -58,7 +58,18 @@ export async function GET(
       return NextResponse.json({ error: "Timetable entry not found" }, { status: 404 });
     }
 
-    return NextResponse.json(entry);
+    // Transform to lowercase for client compatibility
+    const transformed = {
+      ...entry,
+      section: {
+        ...entry.Section,
+        class: entry.Section.Class,
+      },
+      subject: entry.Subject,
+      staff: entry.Staff,
+    };
+
+    return NextResponse.json(transformed);
   } catch (error) {
     console.error("[GET /api/timetable/[id]]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -184,7 +195,18 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(entry);
+    // Transform to lowercase for client compatibility
+    const transformed = {
+      ...entry,
+      section: {
+        ...entry.Section,
+        class: entry.Section.Class,
+      },
+      subject: entry.Subject,
+      staff: entry.Staff,
+    };
+
+    return NextResponse.json(transformed);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

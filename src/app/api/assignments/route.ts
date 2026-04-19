@@ -99,6 +99,17 @@ export async function GET(req: NextRequest) {
       prisma.assignment.count({ where }),
     ]);
 
+    // Transform Prisma relation names to lowercase for client
+    const transformAssignment = (a: Record<string, unknown>) => {
+      const section = a.Section as Record<string, unknown> | undefined;
+      return {
+        ...a,
+        subject: a.Subject,
+        section: section ? { ...section, class: section.Class } : undefined,
+        _count: { submissions: (a._count as Record<string, unknown>)?.AssignmentSubmission },
+      };
+    };
+
     // Add submission status for students
     if (session.user.role === "STUDENT") {
       const student = await prisma.student.findFirst({
@@ -108,11 +119,11 @@ export async function GET(req: NextRequest) {
 
       if (student) {
         const assignmentsWithStatus = await Promise.all(
-          assignments.map(async (assignment) => {
+          assignments.map(async (assignment: Record<string, unknown>) => {
             const submission = await prisma.assignmentSubmission.findUnique({
               where: {
                 assignmentId_studentId: {
-                  assignmentId: assignment.id,
+                  assignmentId: assignment.id as string,
                   studentId: student.id,
                 },
               },
@@ -120,7 +131,7 @@ export async function GET(req: NextRequest) {
             });
 
             const now = new Date();
-            const dueDate = new Date(assignment.dueDate);
+            const dueDate = new Date(assignment.dueDate as string);
             const isOverdue = now > dueDate && !submission;
 
             let assignmentStatus = "pending";
@@ -131,7 +142,7 @@ export async function GET(req: NextRequest) {
             }
 
             return {
-              ...assignment,
+              ...transformAssignment(assignment),
               status: assignmentStatus,
               submission,
             };
@@ -145,7 +156,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      data: assignments,
+      data: assignments.map(transformAssignment as (a: object) => object),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
@@ -247,7 +258,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(assignment, { status: 201 });
+    return NextResponse.json({
+      ...assignment,
+      subject: assignment.Subject,
+      section: { ...assignment.Section, class: assignment.Section.Class },
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -169,7 +169,28 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Delete will cascade to examSubjects and examResults
+    // Delete in order: ExamResults -> ExamSubjects -> Exam
+    // First, get all exam subject IDs
+    const examSubjects = await prisma.examSubject.findMany({
+      where: { examId: id },
+      select: { id: true },
+    });
+
+    const examSubjectIds = examSubjects.map((es) => es.id);
+
+    // Delete all exam results for these exam subjects
+    if (examSubjectIds.length > 0) {
+      await prisma.examResult.deleteMany({
+        where: { examSubjectId: { in: examSubjectIds } },
+      });
+    }
+
+    // Delete all exam subjects
+    await prisma.examSubject.deleteMany({
+      where: { examId: id },
+    });
+
+    // Finally delete the exam
     await prisma.exam.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

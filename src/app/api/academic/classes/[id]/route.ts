@@ -37,12 +37,28 @@ export async function PUT(
       where: { id },
       data: { ...data, updatedAt: new Date() },
       include: {
-        Section: { include: { _count: { select: { Student: true } } } },
+        Section: { include: { Class: true, _count: { select: { Student: true } } } },
         _count: { select: { Section: true } },
       },
     });
 
-    return NextResponse.json(updated);
+    // Transform to lowercase for client compatibility
+    const transformed = {
+      ...updated,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+      sections: updated.Section.map((s) => ({
+        id: s.id,
+        name: s.name,
+        classId: s.classId,
+        _count: { students: s._count.Student },
+      })),
+      _count: {
+        sections: updated._count.Section,
+      },
+    };
+
+    return NextResponse.json(transformed);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

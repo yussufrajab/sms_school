@@ -91,7 +91,18 @@ export async function GET(req: NextRequest) {
       orderBy: [{ dayOfWeek: "asc" }, { periodNo: "asc" }],
     });
 
-    return NextResponse.json(entries);
+    // Transform to lowercase for client compatibility
+    const transformed = entries.map((e) => ({
+      ...e,
+      section: {
+        ...e.Section,
+        class: e.Section.Class,
+      },
+      subject: e.Subject,
+      staff: e.Staff,
+    }));
+
+    return NextResponse.json(transformed);
   } catch (error) {
     console.error("[GET /api/timetable]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -206,7 +217,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(entry, { status: 201 });
+    // Transform to lowercase for client compatibility
+    const transformed = {
+      ...entry,
+      section: {
+        ...entry.Section,
+        class: entry.Section.Class,
+      },
+      subject: entry.Subject,
+      staff: entry.Staff,
+    };
+
+    return NextResponse.json(transformed, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

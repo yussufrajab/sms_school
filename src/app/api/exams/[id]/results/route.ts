@@ -74,7 +74,7 @@ export async function GET(
     }
 
     const where: Record<string, unknown> = {
-      examSubject: { examId: id },
+      ExamSubject: { examId: id },
     };
 
     if (examSubjectId) {
@@ -138,9 +138,12 @@ export async function GET(
       orderBy: [{ Student: { firstName: "asc" } }],
     });
 
+    console.log(`[GET /api/exams/[id]/results] Found ${results.length} results for examSubjectId:`, examSubjectId);
+
     // Transform to lowercase for client compatibility
     const transformed = results.map(r => ({
       ...r,
+      marksObtained: r.marksObtained ?? 0,
       student: r.Student,
       examSubject: {
         ...r.ExamSubject,
@@ -208,6 +211,8 @@ export async function POST(
     }
 
     // Process results in a transaction
+    console.log(`[POST /api/exams/[id]/results] Processing ${data.results.length} results for examSubjectId:`, data.examSubjectId);
+
     const results = await prisma.$transaction(
       data.results.map((result) =>
         prisma.examResult.upsert({
@@ -240,6 +245,8 @@ export async function POST(
         })
       )
     );
+
+    console.log(`[POST /api/exams/[id]/results] Successfully saved ${results.length} results`);
 
     // Transform results for client compatibility
     const transformedResults = results.map(r => ({

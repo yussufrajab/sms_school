@@ -260,17 +260,17 @@ function LeaveDetailsDialog({ application }: { application: LeaveApplication }) 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={application.staff.user.image ?? undefined} />
+            <AvatarImage src={application.staff?.user?.image ?? undefined} />
             <AvatarFallback className="bg-primary/10 text-primary">
-              {getInitials(`${application.staff.firstName} ${application.staff.lastName}`)}
+              {getInitials(`${application.staff?.firstName ?? ""} ${application.staff?.lastName ?? ""}`)}
             </AvatarFallback>
           </Avatar>
           <div>
             <p className="font-medium">
-              {application.staff.firstName} {application.staff.lastName}
+              {application.staff?.firstName ?? "Unknown"} {application.staff?.lastName ?? ""}
             </p>
             <p className="text-sm text-muted-foreground">
-              {application.staff.employeeId} · {application.staff.department ?? "N/A"}
+              {application.staff?.employeeId ?? "N/A"} · {application.staff?.department ?? "N/A"}
             </p>
           </div>
         </div>
@@ -548,17 +548,17 @@ export function LeaveClient({
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={app.staff.user.image ?? undefined} />
+                            <AvatarImage src={app.staff?.user?.image ?? undefined} />
                             <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {getInitials(`${app.staff.firstName} ${app.staff.lastName}`)}
+                              {getInitials(`${app.staff?.firstName ?? ""} ${app.staff?.lastName ?? ""}`)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium text-sm">
-                              {app.staff.firstName} {app.staff.lastName}
+                              {app.staff?.firstName ?? "Unknown"} {app.staff?.lastName ?? ""}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {app.staff.employeeId}
+                              {app.staff?.employeeId ?? "N/A"}
                             </p>
                           </div>
                         </div>

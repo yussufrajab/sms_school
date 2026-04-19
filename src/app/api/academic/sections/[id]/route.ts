@@ -42,7 +42,14 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updated);
+    // Transform to lowercase for client compatibility
+    const transformed = {
+      ...updated,
+      class: updated.Class,
+      _count: { students: updated._count.Student },
+    };
+
+    return NextResponse.json(transformed);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

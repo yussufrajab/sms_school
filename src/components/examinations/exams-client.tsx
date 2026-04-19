@@ -54,6 +54,13 @@ import {
   Loader2,
   Clock,
   MapPin,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  BarChart3,
+  ListFilter,
+  Grid3X3,
+  CalendarDays,
 } from "lucide-react";
 
 type AcademicYear = { id: string; name: string; isCurrent: boolean };
@@ -72,8 +79,20 @@ type Exam = {
   _count?: { examSubjects: number };
 };
 
+// Helper to check if exam is ongoing
+function getExamStatus(exam: Exam): { label: string; variant: "default" | "secondary" | "outline"; color: string } {
+  const now = new Date();
+  const start = new Date(exam.startDate);
+  const end = new Date(exam.endDate);
+
+  if (now < start) return { label: "Upcoming", variant: "outline", color: "text-blue-600 border-blue-600" };
+  if (now > end) return { label: "Completed", variant: "secondary", color: "text-muted-foreground" };
+  return { label: "Ongoing", variant: "default", color: "bg-green-100 text-green-800 hover:bg-green-100" };
+}
+
 type ExamSubject = {
   id: string;
+  sectionId: string;
   maxMarks: number;
   passMark: number;
   examDate: string;
@@ -116,6 +135,8 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   // Dialogs
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -153,6 +174,9 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
   const [duration, setDuration] = useState("");
   const [venue, setVenue] = useState("");
 
+  // Edit subject state
+  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
+
   // Delete subject
   const [deleteSubject, setDeleteSubject] = useState<ExamSubject | null>(null);
   const [deletingSubject, setDeletingSubject] = useState(false);
@@ -170,7 +194,22 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
       const res = await fetch(`/api/exams?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setExams(data.data);
+        let filteredExams = data.data;
+
+        // Apply status filter
+        if (statusFilter !== "ALL") {
+          const now = new Date();
+          filteredExams = filteredExams.filter((e: Exam) => {
+            const start = new Date(e.startDate);
+            const end = new Date(e.endDate);
+            if (statusFilter === "UPCOMING") return now < start;
+            if (statusFilter === "ONGOING") return now >= start && now <= end;
+            if (statusFilter === "COMPLETED") return now > end;
+            return true;
+          });
+        }
+
+        setExams(filteredExams);
         setTotalPages(data.pagination?.totalPages ?? 1);
         setTotal(data.pagination?.total ?? 0);
       }
@@ -180,7 +219,7 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedTerm, search, page]);
+  }, [selectedYear, selectedTerm, search, page, statusFilter]);
 
   useEffect(() => {
     fetchExams();
@@ -223,14 +262,14 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
   };
 
   const handleEditExam = async () => {
-    if (!viewExam || !editName || !editStartDate || !editEndDate) {
+    if (!editExamRef || !editName || !editStartDate || !editEndDate) {
       toast.error("Please fill all required fields");
       return;
     }
 
     setFormLoading(true);
     try {
-      const res = await fetch(`/api/exams/${viewExam.id}`, {
+      const res = await fetch(`/api/exams/${editExamRef.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -390,6 +429,46 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
     setStartTime("");
     setDuration("");
     setVenue("");
+    setEditingSubjectId(null);
+  };
+
+  const handleUpdateSubject = async () => {
+    if (!editingSubjectId || !selectedExam || !examDate) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    setFormLoading(true);
+    try {
+      const res = await fetch(`/api/exams/${selectedExam.id}/subjects/${editingSubjectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maxMarks: parseFloat(maxMarks),
+          passMark: parseFloat(passMark),
+          examDate,
+          startTime: startTime || null,
+          duration: duration ? parseInt(duration) : null,
+          venue: venue || null,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Subject updated successfully");
+        const subjectsRes = await fetch(`/api/exams/${selectedExam.id}/subjects`);
+        if (subjectsRes.ok) {
+          setExamSubjects(await subjectsRes.json());
+        }
+        resetSubjectForm();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to update subject");
+      }
+    } catch {
+      toast.error("Failed to update subject");
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const openEditDialog = (exam: Exam) => {
@@ -421,7 +500,7 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex flex-wrap gap-2">
           <Select value={selectedYear} onValueChange={(v) => { setSelectedYear(v); setPage(1); }}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select academic year" />
             </SelectTrigger>
             <SelectContent>
@@ -436,7 +515,7 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
           </Select>
 
           <Select value={selectedTerm} onValueChange={(v) => { setSelectedTerm(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select term" />
             </SelectTrigger>
             <SelectContent>
@@ -446,6 +525,18 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                   {term.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Status</SelectItem>
+              <SelectItem value="UPCOMING">Upcoming</SelectItem>
+              <SelectItem value="ONGOING">Ongoing</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
             </SelectContent>
           </Select>
 
@@ -460,13 +551,33 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
           </div>
         </div>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Exam
+        <div className="flex gap-2">
+          <div className="border rounded-md flex">
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-r-none"
+              onClick={() => setViewMode("table")}
+            >
+              <ListFilter className="h-4 w-4" />
             </Button>
-          </DialogTrigger>
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-l-none"
+              onClick={() => setViewMode("grid")}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Exam
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Exam</DialogTitle>
@@ -531,6 +642,112 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
             </div>
           </DialogContent>
         </Dialog>
+          </div>
+      </div>
+
+      {/* Timeline Section - Upcoming & Ongoing Exams */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">Exam Timeline</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Ongoing Exams */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  Ongoing Exams
+                </CardTitle>
+                <Badge variant="outline">
+                  {exams.filter((e) => {
+                    const now = new Date();
+                    return now >= new Date(e.startDate) && now <= new Date(e.endDate);
+                  }).length}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {exams.filter((e) => {
+                const now = new Date();
+                return now >= new Date(e.startDate) && now <= new Date(e.endDate);
+              }).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No ongoing exams</p>
+              ) : (
+                <div className="space-y-2">
+                  {exams
+                    .filter((e) => {
+                      const now = new Date();
+                      return now >= new Date(e.startDate) && now <= new Date(e.endDate);
+                    })
+                    .slice(0, 3)
+                    .map((exam) => (
+                      <div
+                        key={exam.id}
+                        className="flex items-center justify-between p-2 rounded-md bg-muted/50 cursor-pointer hover:bg-muted"
+                        onClick={() => openViewDialog(exam)}
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{exam.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Ends {format(new Date(exam.endDate), "MMM d, yyyy")}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openViewDialog(exam); }}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Exams */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                  Upcoming Exams
+                </CardTitle>
+                <Badge variant="outline">
+                  {exams.filter((e) => new Date() < new Date(e.startDate)).length}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {exams.filter((e) => new Date() < new Date(e.startDate)).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No upcoming exams</p>
+              ) : (
+                <div className="space-y-2">
+                  {exams
+                    .filter((e) => new Date() < new Date(e.startDate))
+                    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                    .slice(0, 3)
+                    .map((exam) => (
+                      <div
+                        key={exam.id}
+                        className="flex items-center justify-between p-2 rounded-md bg-muted/50 cursor-pointer hover:bg-muted"
+                        onClick={() => openViewDialog(exam)}
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{exam.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Starts {format(new Date(exam.startDate), "MMM d, yyyy")}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openViewDialog(exam); }}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Stats */}
@@ -541,6 +758,7 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{total}</p>
+            <p className="text-xs text-muted-foreground mt-1">{exams.filter((e) => !e.isPublished).length} drafts</p>
           </CardContent>
         </Card>
         <Card>
@@ -549,14 +767,21 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{exams.filter((e) => e.isPublished).length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Ready for viewing</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Drafts</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ongoing</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-orange-600">{exams.filter((e) => !e.isPublished).length}</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {exams.filter((e) => {
+                const now = new Date();
+                return now >= new Date(e.startDate) && now <= new Date(e.endDate);
+              }).length}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Currently active</p>
           </CardContent>
         </Card>
         <Card>
@@ -565,28 +790,47 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{exams.reduce((s, e) => s + (e._count?.examSubjects ?? 0), 0)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Across all exams</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Exams Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Examinations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : exams.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No exams found. Create your first exam to get started.
-            </div>
-          ) : (
-            <>
+      {/* Exams Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Examinations</h2>
+          <p className="text-sm text-muted-foreground">
+            {total} {total === 1 ? "exam" : "exams"} found
+          </p>
+        </div>
+
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : exams.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold">No exams found</h3>
+                <p className="text-muted-foreground mt-1">Create your first exam to get started</p>
+                <Button className="mt-4" onClick={() => setIsCreateOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Exam
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : viewMode === "table" ? (
+          <Card>
+            <CardContent className="pt-6">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -594,81 +838,105 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                     <TableHead>Academic Year</TableHead>
                     <TableHead>Term</TableHead>
                     <TableHead>Date Range</TableHead>
+                    <TableHead>Duration</TableHead>
                     <TableHead>Subjects</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Publication</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {exams.map((exam) => (
-                    <TableRow
-                      key={exam.id}
-                      className="cursor-pointer"
-                      onClick={() => openViewDialog(exam)}
-                    >
-                      <TableCell className="font-medium">{exam.name}</TableCell>
-                      <TableCell>{exam.academicYear?.name ?? "N/A"}</TableCell>
-                      <TableCell>{exam.term?.name || "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {format(new Date(exam.startDate), "MMM d")} -{" "}
-                          {format(new Date(exam.endDate), "MMM d, yyyy")}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{exam._count?.examSubjects || 0}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={exam.isPublished ? "default" : "outline"}
-                          className={exam.isPublished ? "bg-green-100 text-green-800" : ""}
-                        >
-                          {exam.isPublished ? "Published" : "Draft"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openSubjectsDialog(exam)}
-                            title="Manage Subjects"
+                  {exams.map((exam) => {
+                    const durationDays = Math.ceil(
+                      (new Date(exam.endDate).getTime() - new Date(exam.startDate).getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    ) + 1;
+                    const examStatus = getExamStatus(exam);
+
+                    return (
+                      <TableRow
+                        key={exam.id}
+                        className="cursor-pointer"
+                        onClick={() => openViewDialog(exam)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col">
+                            <span>{exam.name}</span>
+                            <span className={`text-xs ${examStatus.color}`}>{examStatus.label}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{exam.academicYear?.name ?? "N/A"}</TableCell>
+                        <TableCell>{exam.term?.name || "-"}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {format(new Date(exam.startDate), "MMM d")} -{" "}
+                              {format(new Date(exam.endDate), "MMM d, yyyy")}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{durationDays} {durationDays === 1 ? "day" : "days"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{exam._count?.examSubjects || 0}</Badge>
+                            {exam._count && exam._count.examSubjects === 0 && (
+                              <span className="text-xs text-amber-600">No subjects</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={exam.isPublished ? "default" : "outline"}
+                            className={exam.isPublished ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}
                           >
-                            <BookOpen className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleTogglePublish(exam)}
-                            title={exam.isPublished ? "Unpublish" : "Publish Results"}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEditDialog(exam)}
-                            title="Edit"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => setDeleteExam(exam)}
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {exam.isPublished ? "Published" : "Draft"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openSubjectsDialog(exam)}
+                              title="Manage Subjects"
+                            >
+                              <BookOpen className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleTogglePublish(exam)}
+                              title={exam.isPublished ? "Unpublish" : "Publish Results"}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openEditDialog(exam)}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => setDeleteExam(exam)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
@@ -676,7 +944,7 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Page {page} of {totalPages}
+                    Showing {total} exams
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -687,6 +955,7 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
+                    <span className="text-sm py-1">Page {page} of {totalPages}</span>
                     <Button
                       variant="outline"
                       size="sm"
@@ -698,34 +967,166 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                   </div>
                 </div>
               )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Grid View */
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {exams.map((exam) => {
+              const durationDays = Math.ceil(
+                (new Date(exam.endDate).getTime() - new Date(exam.startDate).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              ) + 1;
+              const examStatus = getExamStatus(exam);
+
+              return (
+                <Card key={exam.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => openViewDialog(exam)}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-base">{exam.name}</CardTitle>
+                        <p className="text-xs text-muted-foreground mt-1">{exam.academicYear?.name}</p>
+                      </div>
+                      <Badge variant={exam.isPublished ? "default" : "outline"} className={exam.isPublished ? "bg-green-100 text-green-800" : ""}>
+                        {exam.isPublished ? "Published" : "Draft"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>{format(new Date(exam.startDate), "MMM d")} - {format(new Date(exam.endDate), "MMM d, yyyy")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{durationDays} {durationDays === 1 ? "day" : "days"}</Badge>
+                        <Badge variant="secondary">{exam._count?.examSubjects || 0} subjects</Badge>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${examStatus.color}`}>{examStatus.label}</span>
+                    </div>
+                    {exam.term && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CalendarDays className="h-3 w-3" />
+                        <span>{exam.term.name}</span>
+                      </div>
+                    )}
+                    <div className="flex gap-2 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="flex-1" onClick={() => openSubjectsDialog(exam)}>
+                        <BookOpen className="h-3 w-3 mr-1" /> Subjects
+                      </Button>
+                      <Button variant="ghost" size="sm" className="flex-1" onClick={() => openEditDialog(exam)}>
+                        <Pencil className="h-3 w-3 mr-1" /> Edit
+                      </Button>
+                      <Button variant="ghost" size="sm" className="flex-1 text-destructive" onClick={() => setDeleteExam(exam)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* View Exam Dialog */}
       <Dialog open={!!viewExam} onOpenChange={() => setViewExam(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Exam Details</DialogTitle>
+            <DialogTitle className="text-xl">{viewExam?.name}</DialogTitle>
           </DialogHeader>
           {viewExam && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <InfoItem label="Name" value={viewExam.name} icon={<BookOpen className="h-4 w-4" />} />
-                <InfoItem label="Status" value={viewExam.isPublished ? "Published" : "Draft"} />
-                <InfoItem label="Academic Year" value={viewExam.academicYear?.name} icon={<Calendar className="h-4 w-4" />} />
-                <InfoItem label="Term" value={viewExam.term?.name} />
-                <InfoItem label="Start Date" value={format(new Date(viewExam.startDate), "MMM d, yyyy")} />
-                <InfoItem label="End Date" value={format(new Date(viewExam.endDate), "MMM d, yyyy")} />
-                <InfoItem label="Subjects" value={`${viewExam._count?.examSubjects ?? 0}`} icon={<BookOpen className="h-4 w-4" />} />
+            <div className="space-y-6">
+              {/* Status Badges */}
+              <div className="flex gap-2">
+                <Badge variant={viewExam.isPublished ? "default" : "outline"} className={viewExam.isPublished ? "bg-green-100 text-green-800" : ""}>
+                  {viewExam.isPublished ? "Published" : "Draft"}
+                </Badge>
+                <Badge variant="outline">{getExamStatus(viewExam).label}</Badge>
               </div>
-              <div className="flex gap-2 pt-2">
+
+              {/* Exam Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="pt-4">
+                    <InfoItem label="Academic Year" value={viewExam.academicYear?.name} icon={<Calendar className="h-4 w-4" />} />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <InfoItem label="Term" value={viewExam.term?.name || "Not assigned"} />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <InfoItem
+                      label="Start Date"
+                      value={format(new Date(viewExam.startDate), "MMMM d, yyyy")}
+                      icon={<Calendar className="h-4 w-4" />}
+                    />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <InfoItem
+                      label="End Date"
+                      value={format(new Date(viewExam.endDate), "MMMM d, yyyy")}
+                      icon={<Calendar className="h-4 w-4" />}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Duration Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Exam Duration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">
+                      {Math.ceil((new Date(viewExam.endDate).getTime() - new Date(viewExam.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({format(new Date(viewExam.startDate), "MMM d")} - {format(new Date(viewExam.endDate), "MMM d, yyyy")})
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Subjects Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Subjects Registered
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{viewExam._count?.examSubjects ?? 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {viewExam._count && viewExam._count.examSubjects === 0
+                      ? "No subjects added yet. Click 'Manage Subjects' to add."
+                      : "subjects configured for this exam"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 pt-2">
                 <Button variant="outline" size="sm" onClick={() => { const exam = viewExam; setViewExam(null); openSubjectsDialog(exam); }}>
                   <BookOpen className="w-4 h-4 mr-1" /> Manage Subjects
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => { const exam = viewExam; setViewExam(null); openEditDialog(exam); }}>
-                  <Pencil className="w-4 h-4 mr-1" /> Edit
+                  <Pencil className="w-4 h-4 mr-1" /> Edit Exam
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { const exam = viewExam; setViewExam(null); handleTogglePublish(exam); }}
+                >
+                  <Eye className="w-4 h-4 mr-1" /> {viewExam.isPublished ? "Unpublish" : "Publish"}
                 </Button>
                 <Button variant="outline" size="sm" className="text-destructive" onClick={() => { const exam = viewExam; setViewExam(null); setDeleteExam(exam); }}>
                   <Trash2 className="w-4 h-4 mr-1" /> Delete
@@ -806,22 +1207,69 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
 
       {/* Manage Subjects Dialog */}
       <Dialog open={isSubjectsOpen} onOpenChange={setIsSubjectsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[98vw] w-full max-h-[90vh] overflow-y-auto p-6">
           <DialogHeader>
-            <DialogTitle>Manage Exam Subjects - {selectedExam?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Manage Exam Subjects - {selectedExam?.name}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Add Subject Form */}
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">{examSubjects.length}</p>
+                  <p className="text-xs text-muted-foreground">Total Subjects</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">{new Set(examSubjects.map((es) => es.sectionId)).size}</p>
+                  <p className="text-xs text-muted-foreground">Sections</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {examSubjects.reduce((sum, es) => sum + (es._count?.examResults ?? 0), 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Results Entered</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {examSubjects.filter((es) => es.venue).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">With Venues</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Add/Edit Subject Form */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Add Subject to Exam</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    {editingSubjectId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {editingSubjectId ? "Edit Subject" : "Add Subject to Exam"}
+                  </CardTitle>
+                  {editingSubjectId && (
+                    <Badge variant="outline" className="text-xs">
+                      Editing: {subjects.find(s => s.id === subjectId)?.name} - {sections.find(s => s.id === sectionId)?.class?.name} {sections.find(s => s.id === sectionId)?.name}
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   <div className="space-y-2">
                     <Label>Subject *</Label>
-                    <Select value={subjectId} onValueChange={setSubjectId}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <Select value={subjectId} onValueChange={setSubjectId} disabled={!!editingSubjectId}>
+                      <SelectTrigger className={editingSubjectId ? "bg-muted" : ""}>
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
                       <SelectContent>
                         {subjects.map((s) => (
                           <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
@@ -831,8 +1279,10 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                   </div>
                   <div className="space-y-2">
                     <Label>Section *</Label>
-                    <Select value={sectionId} onValueChange={setSectionId}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <Select value={sectionId} onValueChange={setSectionId} disabled={!!editingSubjectId}>
+                      <SelectTrigger className={editingSubjectId ? "bg-muted" : ""}>
+                        <SelectValue placeholder="Select section" />
+                      </SelectTrigger>
                       <SelectContent>
                         {sections.map((s) => (
                           <SelectItem key={s.id} value={s.id}>{s.class.name} - {s.name}</SelectItem>
@@ -858,84 +1308,177 @@ export function ExamsClient({ academicYears, terms, sections, subjects }: ExamsC
                   </div>
                   <div className="space-y-2">
                     <Label>Duration (min)</Label>
-                    <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g., 60" />
+                    <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="60" />
                   </div>
                   <div className="space-y-2">
                     <Label>Venue</Label>
-                    <Input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="e.g., Room 101" />
+                    <Input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Room 101" />
                   </div>
                 </div>
-                <Button className="mt-4" onClick={handleAddSubject} disabled={formLoading}>
-                  {formLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding...</> : <><Plus className="h-4 w-4 mr-2" />Add Subject</>}
-                </Button>
+                <div className="flex justify-end mt-4">
+                  <div className="flex items-center gap-2">
+                    <Button onClick={editingSubjectId ? handleUpdateSubject : handleAddSubject} disabled={formLoading}>
+                      {formLoading ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{editingSubjectId ? "Updating..." : "Adding..."}</>
+                      ) : (
+                        <>{editingSubjectId ? <Pencil className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}{editingSubjectId ? "Update Subject" : "Add Subject"}</>
+                      )}
+                    </Button>
+                    {editingSubjectId && (
+                      <Button variant="outline" onClick={resetSubjectForm}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             {/* Subjects List */}
-            <div className="border rounded-lg">
-              {subjectsLoading ? (
-                <div className="p-4 space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
-                  ))}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <ListFilter className="h-4 w-4" />
+                    Registered Subjects
+                  </CardTitle>
+                  <Badge variant="outline">{examSubjects.length} total</Badge>
                 </div>
-              ) : examSubjects.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No subjects added yet. Add subjects to this exam.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Section</TableHead>
-                      <TableHead>Max/Pass</TableHead>
-                      <TableHead>Date & Time</TableHead>
-                      <TableHead>Venue</TableHead>
-                      <TableHead>Results</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {examSubjects.map((es) => (
-                      <TableRow key={es.id}>
-                        <TableCell className="font-medium">{es.subject?.name ?? "N/A"}</TableCell>
-                        <TableCell>{es.section?.class?.name ?? "N/A"} - {es.section?.name ?? "N/A"}</TableCell>
-                        <TableCell>{es.maxMarks}/{es.passMark}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            {format(new Date(es.examDate), "MMM d, yyyy")}
-                            {es.startTime && <span className="text-muted-foreground ml-1">{es.startTime}</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {es.venue ? (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3 text-muted-foreground" />
-                              {es.venue}
-                            </div>
-                          ) : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{es._count?.examResults || 0}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => setDeleteSubject(es)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+              </CardHeader>
+              <CardContent>
+                {subjectsLoading ? (
+                  <div className="p-4 space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
                     ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
+                  </div>
+                ) : examSubjects.length === 0 ? (
+                  <div className="text-center py-12">
+                    <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold">No subjects added yet</h3>
+                    <p className="text-muted-foreground mt-1">Add subjects to configure exam details for each section</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Subject</TableHead>
+                          <TableHead>Section</TableHead>
+                          <TableHead className="text-center">Max/Pass</TableHead>
+                          <TableHead>Date & Time</TableHead>
+                          <TableHead>Venue</TableHead>
+                          <TableHead className="text-center">Results</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {examSubjects.map((es) => (
+                          <TableRow key={es.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                <span>{es.subject?.name ?? "N/A"}</span>
+                                {es.subject?.code && (
+                                  <span className="text-xs text-muted-foreground">{es.subject.code}</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span>{es.section?.class?.name ?? "N/A"}</span>
+                                <span className="text-xs text-muted-foreground">{es.section?.name ?? "N/A"}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline">{es.maxMarks}/{es.passMark}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                                  {format(new Date(es.examDate), "MMM d, yyyy")}
+                                </div>
+                                {es.startTime && (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    {es.startTime}
+                                    {es.duration && <span className="ml-1">({es.duration} min)</span>}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {es.venue ? (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-sm">{es.venue}</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">Not set</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={es._count?.examResults ? "default" : "secondary"}>
+                                {es._count?.examResults || 0}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingSubjectId(es.id);
+                                    setSubjectId(es.subject.id);
+                                    setSectionId(es.section.id);
+                                    setMaxMarks(es.maxMarks.toString());
+                                    setPassMark(es.passMark.toString());
+                                    setExamDate(es.examDate.split("T")[0]);
+                                    setStartTime(es.startTime || "");
+                                    setDuration(es.duration?.toString() || "");
+                                    setVenue(es.venue || "");
+                                  }}
+                                  title="Edit subject"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => setDeleteSubject(es)}
+                                  title="Remove subject"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Tips */}
+            <Card className="bg-blue-50 dark:bg-blue-950/20">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Quick Tips</p>
+                    <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                      <li>• Add subjects for each section that will take the exam</li>
+                      <li>• Set exam dates and times to help students plan their study schedule</li>
+                      <li>• Specify venues to avoid confusion on exam day</li>
+                      <li>• Enter results after grading is complete</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </DialogContent>
       </Dialog>

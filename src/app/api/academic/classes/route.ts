@@ -31,7 +31,19 @@ export async function GET() {
     orderBy: { level: "asc" },
   });
 
-  return NextResponse.json(classes);
+  // Transform to lowercase for client compatibility
+  const transformed = classes.map((cls) => ({
+    ...cls,
+    sections: cls.Section.map((s) => ({
+      ...s,
+      _count: { students: s._count.Student },
+    })),
+    _count: {
+      sections: cls._count.Section,
+    },
+  }));
+
+  return NextResponse.json(transformed);
 }
 
 export async function POST(req: NextRequest) {

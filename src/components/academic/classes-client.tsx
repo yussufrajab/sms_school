@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
   Building2,
@@ -53,7 +54,12 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  Mail,
+  Phone,
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials, formatDate } from "@/lib/utils";
 
 // Types
 interface ClassItem {
@@ -77,6 +83,16 @@ interface Section {
   createdAt: string;
   class: { id: string; name: string; level: number };
   _count: { students: number };
+}
+
+interface SectionStudent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  studentId: string;
+  gender: string;
+  status: string;
+  user?: { email: string } | null;
 }
 
 interface ClassesClientProps {
@@ -383,6 +399,9 @@ export function ClassesClient({
   const [deleteClass, setDeleteClass] = useState<ClassItem | null>(null);
   const [editSection, setEditSection] = useState<Section | null>(null);
   const [deleteSection, setDeleteSection] = useState<Section | null>(null);
+  const [viewSectionStudents, setViewSectionStudents] = useState<Section | null>(null);
+  const [sectionStudents, setSectionStudents] = useState<SectionStudent[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -442,6 +461,25 @@ export function ClassesClient({
     } finally {
       setDeleting(false);
     }
+  };
+
+  const fetchSectionStudents = async (sectionId: string) => {
+    setLoadingStudents(true);
+    try {
+      const res = await fetch(`/api/students?sectionId=${sectionId}&limit=100`);
+      const data = await res.json();
+      setSectionStudents(data.data ?? []);
+    } catch {
+      toast.error("Failed to load students");
+      setSectionStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleViewStudents = (section: Section) => {
+    setViewSectionStudents(section);
+    fetchSectionStudents(section.id);
   };
 
   const totalStudents = sections.reduce((sum, s) => sum + s._count.students, 0);
@@ -612,6 +650,9 @@ export function ClassesClient({
                     <TableCell className="text-right">
                       {canManage && (
                         <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewStudents(section)} title="View students">
+                            <Users className="w-3.5 h-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditSection(section)}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
@@ -737,6 +778,90 @@ export function ClassesClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Section Students Dialog */}
+      <Dialog open={!!viewSectionStudents} onOpenChange={() => setViewSectionStudents(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Students in {viewSectionStudents?.class?.name} - Section {viewSectionStudents?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingStudents ? (
+            <div className="space-y-2 py-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : sectionStudents.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">No students enrolled in this section</p>
+              <Button variant="outline" className="mt-4" asChild>
+                <a href={`/students?sectionId=${viewSectionStudents?.id}`}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Students
+                </a>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {sectionStudents.length} student{sectionStudents.length !== 1 ? "s" : ""} enrolled
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`/students?sectionId=${viewSectionStudents?.id}`}>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Manage Students
+                  </a>
+                </Button>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sectionStudents.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {getInitials(`${student.firstName} ${student.lastName}`)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{student.firstName} {student.lastName}</p>
+                            <p className="text-xs text-muted-foreground">{student.user?.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{student.studentId}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={student.status === "ACTIVE" ? "bg-green-100 text-green-800" : ""}>
+                          {student.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -72,15 +72,16 @@ export function MarkAttendanceClient({ sections, initialStudents = [] }: MarkAtt
   const handleSectionChange = async (sectionId: string) => {
     setSelectedSection(sectionId);
     setLoading(true);
-    
+
     try {
-      const res = await fetch(`/api/students?sectionId=${sectionId}`);
+      const res = await fetch(`/api/students?sectionId=${sectionId}&limit=100`);
       const data = await res.json();
-      setStudents(data.students || []);
-      
+      const studentList = data.data || [];
+      setStudents(studentList);
+
       // Initialize attendance with default ABSENT status
       const initial: Record<string, AttendanceStatus> = {};
-      data.students?.forEach((s: Student) => {
+      studentList.forEach((s: Student) => {
         initial[s.id] = "ABSENT";
       });
       setAttendance(initial);
@@ -109,18 +110,22 @@ export function MarkAttendanceClient({ sections, initialStudents = [] }: MarkAtt
         body: JSON.stringify({
           sectionId: selectedSection,
           date: selectedDate.toISOString().split("T")[0],
-          attendance: Object.entries(attendance).map(([studentId, status]) => ({
+          records: Object.entries(attendance).map(([studentId, status]) => ({
             studentId,
             status,
           })),
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to save attendance");
-      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to save attendance");
+      }
+
       toast.success("Attendance saved successfully");
     } catch (error) {
-      toast.error("Failed to save attendance");
+      const message = error instanceof Error ? error.message : "Failed to save attendance";
+      toast.error(message);
     } finally {
       setSaving(false);
     }

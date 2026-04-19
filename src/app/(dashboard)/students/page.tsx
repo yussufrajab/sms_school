@@ -5,7 +5,11 @@ import { StudentsClient } from "@/components/students/students-client";
 
 export const metadata = { title: "Students" };
 
-export default async function StudentsPage() {
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sectionId?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -13,6 +17,7 @@ export default async function StudentsPage() {
   if (!allowedRoles.includes(session.user.role)) redirect("/dashboard");
 
   const schoolId = session.user.schoolId;
+  const params = await searchParams;
 
   const sections = await prisma.section.findMany({
     where: schoolId ? { Class: { schoolId } } : {},
@@ -27,5 +32,5 @@ export default async function StudentsPage() {
     class: { id: s.Class.id, name: s.Class.name },
   }));
 
-  return <StudentsClient sections={transformedSections} userRole={session.user.role} />;
+  return <StudentsClient sections={transformedSections} userRole={session.user.role} initialSectionId={params.sectionId} />;
 }

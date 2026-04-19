@@ -92,6 +92,7 @@ interface Student {
 interface StudentsClientProps {
   sections: Section[];
   userRole: UserRole;
+  initialSectionId?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -102,12 +103,12 @@ const statusColors: Record<string, string> = {
   EXPELLED: "bg-red-100 text-red-800",
 };
 
-export function StudentsClient({ sections, userRole }: StudentsClientProps) {
+export function StudentsClient({ sections, userRole, initialSectionId }: StudentsClientProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [sectionFilter, setSectionFilter] = useState("ALL");
+  const [sectionFilter, setSectionFilter] = useState(initialSectionId || "ALL");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);

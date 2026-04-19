@@ -66,7 +66,22 @@ export async function GET(
       orderBy: [{ examDate: "asc" }],
     });
 
-    return NextResponse.json(examSubjects);
+    // Transform to lowercase for client compatibility
+    const transformed = examSubjects.map((es) => ({
+      id: es.id,
+      sectionId: es.sectionId,
+      maxMarks: es.maxMarks,
+      passMark: es.passMark,
+      examDate: es.examDate.toISOString(),
+      startTime: es.startTime,
+      duration: es.duration,
+      venue: es.venue,
+      subject: es.Subject,
+      section: { id: es.Section.id, name: es.Section.name, class: { id: es.Section.Class.id, name: es.Section.Class.name } },
+      _count: { examResults: es._count.ExamResult },
+    }));
+
+    return NextResponse.json(transformed);
   } catch (error) {
     console.error("[GET /api/exams/[id]/subjects]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

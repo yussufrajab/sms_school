@@ -129,6 +129,7 @@ export default function AssignmentsListClient({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Dialogs
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -204,7 +205,7 @@ export default function AssignmentsListClient({
     } finally {
       setLoading(false);
     }
-  }, [selectedSectionId, selectedSubjectId, search, page]);
+  }, [selectedSectionId, selectedSubjectId, search, page, refreshKey]);
 
   useEffect(() => {
     fetchAssignments();
@@ -264,7 +265,12 @@ export default function AssignmentsListClient({
       if (res.ok) {
         toast.success("Assignment created successfully");
         setCreateDialogOpen(false);
-        fetchAssignments();
+        // Set filters to the section and subject of the created assignment to show it
+        // Also increment refreshKey to force a refetch
+        setSelectedSectionId(formData.sectionId);
+        setSelectedSubjectId(formData.subjectId);
+        setPage(1);
+        setRefreshKey((k) => k + 1);
       } else {
         const error = await res.json();
         toast.error(error.error || "Failed to create assignment");
@@ -302,7 +308,7 @@ export default function AssignmentsListClient({
       if (res.ok) {
         toast.success("Assignment updated successfully");
         setEditDialogOpen(false);
-        fetchAssignments();
+        setRefreshKey((k) => k + 1);
       } else {
         const error = await res.json();
         toast.error(error.error || "Failed to update assignment");
@@ -322,7 +328,7 @@ export default function AssignmentsListClient({
       if (res.ok) {
         toast.success("Assignment deleted successfully");
         setDeleteAssignment(null);
-        fetchAssignments();
+        setRefreshKey((k) => k + 1);
       } else {
         toast.error("Failed to delete assignment");
       }
@@ -352,7 +358,7 @@ export default function AssignmentsListClient({
       if (res.ok) {
         toast.success("Assignment submitted successfully");
         setSubmitDialogOpen(false);
-        fetchAssignments();
+        setRefreshKey((k) => k + 1);
       } else {
         const error = await res.json();
         toast.error(error.error || "Failed to submit assignment");

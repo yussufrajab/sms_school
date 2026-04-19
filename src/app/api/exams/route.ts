@@ -37,6 +37,11 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = {};
 
+  // Scope to school
+  if (session.user.schoolId && session.user.role !== "SUPER_ADMIN") {
+    where.schoolId = session.user.schoolId;
+  }
+
   if (academicYearId) {
     where.academicYearId = academicYearId;
   }
@@ -47,11 +52,6 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     where.name = { contains: search, mode: "insensitive" };
-  }
-
-  // Scope to school
-  if (session.user.schoolId && session.user.role !== "SUPER_ADMIN") {
-    where.academicYear = { schoolId: session.user.schoolId };
   }
 
   try {
