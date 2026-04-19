@@ -63,12 +63,14 @@ export async function GET(req: NextRequest) {
 
   // Scope to school via invoice → student → school
   if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {
-    where.invoice = {
-      student: { schoolId: session.user.schoolId },
-      ...(studentId ? { studentId } : {}),
+    where.Invoice = {
+      Student: { schoolId: session.user.schoolId },
     };
+    if (studentId) {
+      where.Invoice.studentId = studentId;
+    }
   } else if (studentId) {
-    where.invoice = { studentId };
+    where.Invoice = { studentId };
   }
 
   try {
