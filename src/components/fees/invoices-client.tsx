@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, FileText, Eye, DollarSign } from "lucide-react";
+import { Plus, FileText, Eye, Pencil } from "lucide-react";
 
 type Section = { id: string; name: string; class: { id: string; name: string; level: number } };
 type AcademicYear = { id: string; name: string; isCurrent: boolean };
@@ -44,6 +44,7 @@ type Invoice = {
   dueDate: string;
   status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "OVERDUE";
   createdAt: string;
+  notes?: string | null;
   student: {
     id: string;
     studentId: string;
@@ -93,6 +94,13 @@ export function InvoicesClient({
 
   // View invoice dialog
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editItems, setEditItems] = useState<Array<{ description: string; amount: string }>>([]);
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
@@ -204,6 +212,92 @@ export function InvoicesClient({
     setStudents([]);
     setDueDate("");
     setInvoiceItems([{ description: "", amount: "" }]);
+  };
+
+  const startEdit = (invoice: Invoice) => {
+    setIsEditing(true);
+    setEditDueDate(format(new Date(invoice.dueDate), "yyyy-MM-dd"));
+    setEditNotes(invoice.notes || "");
+    setEditItems(
+      invoice.items.map((item) => ({
+        description: item.description,
+        amount: String(item.amount),
+      }))
+    );
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditDueDate("");
+    setEditNotes("");
+    setEditItems([]);
+  };
+
+  const handleAddEditItem = () => {
+    setEditItems([...editItems, { description: "", amount: "" }]);
+  };
+
+  const handleRemoveEditItem = (index: number) => {
+    setEditItems(editItems.filter((_, i) => i !== index));
+  };
+
+  const handleEditItemChange = (index: number, field: "description" | "amount", value: string) => {
+    const updated = [...editItems];
+    updated[index][field] = value;
+    setEditItems(updated);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!viewInvoice) return;
+
+    const validItems = editItems.filter(
+      (item) => item.description && item.amount && parseFloat(item.amount) > 0
+    );
+
+    if (validItems.length === 0) {
+      toast.error("Please add at least one valid invoice item");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/finance/invoices/${viewInvoice.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dueDate: editDueDate,
+          notes: editNotes || null,
+          items: validItems.map((item) => ({
+            description: item.description,
+            amount: parseFloat(item.amount),
+            discount: 0,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        const updatedInvoice = await res.json();
+        const transformedInvoice: Invoice = {
+          ...updatedInvoice,
+          student: updatedInvoice.student,
+          academicYear: updatedInvoice.academicYear,
+          items: updatedInvoice.items,
+        };
+        setViewInvoice(transformedInvoice);
+        setInvoices((prev) =>
+          prev.map((inv) => (inv.id === transformedInvoice.id ? transformedInvoice : inv))
+        );
+        setIsEditing(false);
+        toast.success("Invoice updated successfully");
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to update invoice");
+      }
+    } catch {
+      toast.error("Failed to update invoice");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -402,10 +496,10 @@ export function InvoicesClient({
                       {invoice.student.section?.class.name} - {invoice.student.section?.name}
                     </TableCell>
                     <TableCell className="text-right">
-                      ${invoice.totalAmount.toLocaleString()}
+                      TZS {invoice.totalAmount.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      ${invoice.paidAmount.toLocaleString()}
+                      TZS {invoice.paidAmount.toLocaleString()}
                     </TableCell>
                     <TableCell>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</TableCell>
                     <TableCell>
@@ -431,81 +525,177 @@ export function InvoicesClient({
       </Card>
 
       {/* View Invoice Dialog */}
-      <Dialog open={!!viewInvoice} onOpenChange={() => setViewInvoice(null)}>
+      <Dialog open={!!viewInvoice} onOpenChange={() => { setViewInvoice(null); setIsEditing(false); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Invoice {viewInvoice?.invoiceNumber}
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Invoice {viewInvoice?.invoiceNumber}
+              </div>
+              {!isEditing && viewInvoice && viewInvoice.paidAmount === 0 && (
+                <Button variant="outline" size="sm" onClick={() => startEdit(viewInvoice)}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
           {viewInvoice && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Student</div>
-                  <div className="font-medium">
-                    {viewInvoice.student.firstName} {viewInvoice.student.lastName}
+              {isEditing ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Student</div>
+                      <div className="font-medium">
+                        {viewInvoice.student.firstName} {viewInvoice.student.lastName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Status</div>
+                      <Badge className={getStatusColor(viewInvoice.status)}>
+                        {getStatusLabel(viewInvoice.status)}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label>Due Date</Label>
+                      <Input
+                        type="date"
+                        value={editDueDate}
+                        onChange={(e) => setEditDueDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Notes</Label>
+                      <Input
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        placeholder="Optional notes"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                  <Badge className={getStatusColor(viewInvoice.status)}>
-                    {getStatusLabel(viewInvoice.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Due Date</div>
-                  <div>{format(new Date(viewInvoice.dueDate), "MMMM d, yyyy")}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Created</div>
-                  <div>{format(new Date(viewInvoice.createdAt), "MMM d, yyyy")}</div>
-                </div>
-              </div>
 
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {viewInvoice.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell className="text-right">
-                          ${item.netAmount.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label>Invoice Items</Label>
+                      <Button variant="outline" size="sm" onClick={handleAddEditItem}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Item
+                      </Button>
+                    </div>
+                    {editItems.map((item, index) => (
+                      <div key={index} className="flex gap-2 items-start">
+                        <Input
+                          placeholder="Description"
+                          value={item.description}
+                          onChange={(e) => handleEditItemChange(index, "description", e.target.value)}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          value={item.amount}
+                          onChange={(e) => handleEditItemChange(index, "amount", e.target.value)}
+                          className="w-32"
+                        />
+                        {editItems.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveEditItem(index)}
+                          >
+                            ×
+                          </Button>
+                        )}
+                      </div>
                     ))}
-                    <TableRow>
-                      <TableCell className="font-bold">Total</TableCell>
-                      <TableCell className="text-right font-bold">
-                        ${viewInvoice.totalAmount.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Paid</TableCell>
-                      <TableCell className="text-right text-green-600">
-                        ${viewInvoice.paidAmount.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-bold">Balance</TableCell>
-                      <TableCell className="text-right font-bold text-red-600">
-                        ${(viewInvoice.totalAmount - viewInvoice.paidAmount).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
+                  </div>
 
-              <div className="text-sm text-muted-foreground">
-                {viewInvoice._count?.payments || 0} payment(s) recorded
-              </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={cancelEdit}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveEdit} disabled={editLoading}>
+                      {editLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Student</div>
+                      <div className="font-medium">
+                        {viewInvoice.student.firstName} {viewInvoice.student.lastName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Status</div>
+                      <Badge className={getStatusColor(viewInvoice.status)}>
+                        {getStatusLabel(viewInvoice.status)}
+                      </Badge>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Due Date</div>
+                      <div>{format(new Date(viewInvoice.dueDate), "MMMM d, yyyy")}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Created</div>
+                      <div>{format(new Date(viewInvoice.createdAt), "MMM d, yyyy")}</div>
+                    </div>
+                    {viewInvoice.notes && (
+                      <div className="col-span-2">
+                        <div className="text-sm text-muted-foreground">Notes</div>
+                        <div>{viewInvoice.notes}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Description</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewInvoice.items.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.description}</TableCell>
+                            <TableCell className="text-right">
+                              TZS {item.netAmount.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow>
+                          <TableCell className="font-bold">Total</TableCell>
+                          <TableCell className="text-right font-bold">
+                            TZS {viewInvoice.totalAmount.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Paid</TableCell>
+                          <TableCell className="text-right text-green-600">
+                            TZS {viewInvoice.paidAmount.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-bold">Balance</TableCell>
+                          <TableCell className="text-right font-bold text-red-600">
+                            TZS {(viewInvoice.totalAmount - viewInvoice.paidAmount).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    {viewInvoice._count?.payments || 0} payment(s) recorded
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
