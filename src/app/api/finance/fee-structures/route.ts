@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     // Scope to school for non-super-admins
     if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {
-      where.feeCategory = { schoolId: session.user.schoolId };
+      where.FeeCategory = { schoolId: session.user.schoolId };
     }
 
     const structures = await prisma.feeStructure.findMany({
