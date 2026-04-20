@@ -50,7 +50,28 @@ export async function GET(_req: NextRequest) {
       orderBy: { registration: "asc" },
     });
 
-    return NextResponse.json(vehicles);
+    // Transform to match frontend expected format
+    const transformedVehicles = vehicles.map((vehicle) => ({
+      id: vehicle.id,
+      registration: vehicle.registration,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      capacity: vehicle.capacity,
+      status: vehicle.status,
+      driver: vehicle.Driver
+        ? {
+            id: vehicle.Driver.id,
+            firstName: vehicle.Driver.firstName,
+            lastName: vehicle.Driver.lastName,
+            phone: vehicle.Driver.phone,
+            licenseNumber: vehicle.Driver.licenseNumber,
+          }
+        : null,
+      routes: vehicle.Route,
+    }));
+
+    return NextResponse.json(transformedVehicles);
   } catch (error) {
     console.error("[GET /api/transport/vehicles]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
