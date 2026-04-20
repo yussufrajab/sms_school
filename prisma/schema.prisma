@@ -202,15 +202,20 @@ model Class {
 
 model Driver {
   id            String   @id
+  schoolId      String?
   firstName     String
   lastName      String
-  licenseNumber String   @unique
+  licenseNumber String
   licenseExpiry DateTime
   phone         String?
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
-  updatedAt     DateTime            @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+  School        School?   @relation(fields: [schoolId], references: [id])
   Vehicle       Vehicle?
 
+  @@index([schoolId])
   @@index([licenseExpiry])
 }
 
@@ -545,8 +550,10 @@ model Route {
   endPoint         String
   stops            Json
   vehicleId        String?
+  isActive         Boolean            @default(true)
   createdAt        DateTime           @default(now())
-  updatedAt        DateTime            @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
   School           School             @relation(fields: [schoolId], references: [id])
   Vehicle          Vehicle?           @relation(fields: [vehicleId], references: [id])
   StudentTransport StudentTransport[]
@@ -589,6 +596,7 @@ model School {
   AuditLog         AuditLog[]
   Book             Book[]
   Class            Class[]
+  Driver           Driver[]
   Event            Event[]
   FeeCategory      FeeCategory[]
   Parent           Parent[]
@@ -891,8 +899,10 @@ model Vehicle {
   capacity     Int
   driverId     String?       @unique
   status       VehicleStatus @default(ACTIVE)
+  isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime            @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
   Route        Route[]
   Driver       Driver?       @relation(fields: [driverId], references: [id])
   School       School        @relation(fields: [schoolId], references: [id])

@@ -33,7 +33,9 @@ export async function GET(_req: NextRequest) {
   }
 
   try {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      deletedAt: null, // Exclude soft-deleted
+    };
 
     // Scope to school for non-super-admins
     if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {

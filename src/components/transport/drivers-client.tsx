@@ -22,6 +22,7 @@ interface Driver {
   licenseNumber: string;
   licenseExpiry: string;
   phone: string | null;
+  isActive: boolean;
   vehicle?: {
     id: string;
     registration: string;

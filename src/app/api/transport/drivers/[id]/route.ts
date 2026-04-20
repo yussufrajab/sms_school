@@ -11,6 +11,7 @@ const updateDriverSchema = z.object({
   licenseNumber: z.string().min(1, "License number is required").optional(),
   licenseExpiry: z.string().min(1, "License expiry date is required").optional(),
   phone: z.string().optional().or(z.literal("")),
+  isActive: z.boolean().optional(),
 });
 
 export async function GET(
@@ -40,11 +41,37 @@ export async function GET(
       },
     });
 
-    if (!driver) {
+    if (!driver || driver.deletedAt) {
       return NextResponse.json({ error: "Driver not found" }, { status: 404 });
     }
 
-    return NextResponse.json(driver);
+    // Check school access for non-super-admins
+    if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {
+      if (driver.schoolId !== session.user.schoolId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    // Transform to match frontend expected format
+    const transformedDriver = {
+      id: driver.id,
+      firstName: driver.firstName,
+      lastName: driver.lastName,
+      licenseNumber: driver.licenseNumber,
+      licenseExpiry: driver.licenseExpiry.toISOString(),
+      phone: driver.phone,
+      isActive: driver.isActive,
+      vehicle: driver.Vehicle
+        ? {
+            id: driver.Vehicle.id,
+            registration: driver.Vehicle.registration,
+            make: driver.Vehicle.make,
+            model: driver.Vehicle.model,
+          }
+        : null,
+    };
+
+    return NextResponse.json(transformedDriver);
   } catch (error) {
     console.error("[GET /api/transport/drivers/[id]]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -72,20 +99,32 @@ export async function PUT(
       where: { id },
     });
 
-    if (!existing) {
+    if (!existing || existing.deletedAt) {
       return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+    }
+
+    // Check school access for non-super-admins
+    if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {
+      if (existing.schoolId !== session.user.schoolId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const body = await req.json();
     const data = updateDriverSchema.parse(body);
 
-    // Check for duplicate license number if changing
+    // Check for duplicate license number within the same school if changing
     if (data.licenseNumber && data.licenseNumber !== existing.licenseNumber) {
-      const duplicate = await prisma.driver.findUnique({
-        where: { licenseNumber: data.licenseNumber },
+      const duplicate = await prisma.driver.findFirst({
+        where: {
+          schoolId: existing.schoolId,
+          licenseNumber: data.licenseNumber,
+          deletedAt: null,
+          NOT: { id },
+        },
       });
       if (duplicate) {
-        return NextResponse.json({ error: "Driver with this license number already exists" }, { status: 400 });
+        return NextResponse.json({ error: "Driver with this license number already exists in this school" }, { status: 400 });
       }
     }
 
@@ -96,7 +135,8 @@ export async function PUT(
         lastName: data.lastName,
         licenseNumber: data.licenseNumber,
         licenseExpiry: data.licenseExpiry ? new Date(data.licenseExpiry) : undefined,
-        phone: data.phone,
+        phone: data.phone || null,
+        isActive: data.isActive,
       },
     });
 
@@ -135,8 +175,15 @@ export async function DELETE(
       include: { Vehicle: true },
     });
 
-    if (!existing) {
+    if (!existing || existing.deletedAt) {
       return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+    }
+
+    // Check school access for non-super-admins
+    if (session.user.role !== "SUPER_ADMIN" && session.user.schoolId) {
+      if (existing.schoolId !== session.user.schoolId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Check if driver is assigned to a vehicle
@@ -147,7 +194,11 @@ export async function DELETE(
       );
     }
 
-    await prisma.driver.delete({ where: { id } });
+    // Soft delete
+    await prisma.driver.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
 
     return NextResponse.json({ message: "Driver deleted successfully" });
   } catch (error) {
