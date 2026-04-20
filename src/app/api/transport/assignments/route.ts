@@ -107,7 +107,48 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(filteredAssignments);
+    // Transform to match frontend expected format
+    const transformedAssignments = filteredAssignments.map((assignment) => ({
+      id: assignment.id,
+      stopName: assignment.stopName,
+      isActive: assignment.isActive,
+      student: {
+        id: assignment.Student.id,
+        firstName: assignment.Student.firstName,
+        lastName: assignment.Student.lastName,
+        studentId: assignment.Student.studentId,
+        section: assignment.Student.Section
+          ? {
+              id: assignment.Student.Section.id,
+              name: assignment.Student.Section.name,
+              class: assignment.Student.Section.Class,
+            }
+          : null,
+      },
+      route: {
+        id: assignment.Route.id,
+        name: assignment.Route.name,
+        code: assignment.Route.code,
+        startPoint: assignment.Route.startPoint,
+        endPoint: assignment.Route.endPoint,
+        vehicle: assignment.Route.Vehicle
+          ? {
+              id: assignment.Route.Vehicle.id,
+              registration: assignment.Route.Vehicle.registration,
+              driver: assignment.Route.Vehicle.Driver
+                ? {
+                    id: assignment.Route.Vehicle.Driver.id,
+                    firstName: assignment.Route.Vehicle.Driver.firstName,
+                    lastName: assignment.Route.Vehicle.Driver.lastName,
+                    phone: assignment.Route.Vehicle.Driver.phone,
+                  }
+                : null,
+            }
+          : null,
+      },
+    }));
+
+    return NextResponse.json(transformedAssignments);
   } catch (error) {
     console.error("[GET /api/transport/assignments]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
