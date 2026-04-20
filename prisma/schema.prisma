@@ -906,8 +906,30 @@ model Vehicle {
   Route        Route[]
   Driver       Driver?       @relation(fields: [driverId], references: [id])
   School       School        @relation(fields: [schoolId], references: [id])
+  VehicleMaintenance VehicleMaintenance[]
 
   @@index([schoolId])
+}
+
+model VehicleMaintenance {
+  id               String   @id @default(uuid())
+  vehicleId        String
+  type             String   // ROUTINE, REPAIR, INSPECTION, EMERGENCY
+  status           String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  scheduledDate    DateTime
+  completedDate    DateTime?
+  description      String
+  cost             Float    @default(0)
+  mileage          Int?
+  serviceProvider   String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  Vehicle          Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([status])
+  @@index([scheduledDate])
 }
 
 model VerificationToken {

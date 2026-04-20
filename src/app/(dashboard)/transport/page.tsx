@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RoutesClient from "@/components/transport/routes-client";
 import VehiclesClient from "@/components/transport/vehicles-client";
 import DriversClient from "@/components/transport/drivers-client";
+import MaintenanceClient from "@/components/transport/maintenance-client";
 import TransportAssignmentsClient from "@/components/transport-assignments-client";
 
 export const metadata = {
@@ -72,7 +73,7 @@ export default async function TransportPage() {
     // Routes
     schoolId
       ? prisma.route.findMany({
-          where: { schoolId },
+          where: { schoolId, deletedAt: null },
           include: {
             Vehicle: {
               select: {
@@ -93,31 +94,34 @@ export default async function TransportPage() {
     // Vehicles
     schoolId
       ? prisma.vehicle.findMany({
-          where: { schoolId },
+          where: { schoolId, deletedAt: null },
           include: {
             Driver: {
               select: { id: true, firstName: true, lastName: true, phone: true, licenseNumber: true },
             },
-            Route: { select: { id: true, name: true, code: true } },
+            Route: { select: { id: true, name: true, code: true }, where: { deletedAt: null } },
           },
           orderBy: { registration: "asc" },
         })
       : [],
     // Drivers
-    prisma.driver.findMany({
-      include: {
-        Vehicle: {
-          select: {
-            id: true,
-            registration: true,
-            make: true,
-            model: true,
-            schoolId: true,
+    schoolId
+      ? prisma.driver.findMany({
+          where: { schoolId, deletedAt: null },
+          include: {
+            Vehicle: {
+              select: {
+                id: true,
+                registration: true,
+                make: true,
+                model: true,
+                schoolId: true,
+              },
+            },
           },
-        },
-      },
-      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-    }),
+          orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+        })
+      : [],
     // Students
     schoolId
       ? prisma.student.findMany({
@@ -138,26 +142,23 @@ export default async function TransportPage() {
   ]);
 
   // Filter drivers by school and transform for client
-  const filteredDrivers: DriverForClient[] = drivers
-    .filter(
-      (d) => !d.Vehicle || d.Vehicle.schoolId === schoolId || userRole === "SUPER_ADMIN"
-    )
-    .map((d) => ({
-      id: d.id,
-      firstName: d.firstName,
-      lastName: d.lastName,
-      licenseNumber: d.licenseNumber,
-      licenseExpiry: d.licenseExpiry.toISOString(),
-      phone: d.phone,
-      vehicle: d.Vehicle
-        ? {
-            id: d.Vehicle.id,
-            registration: d.Vehicle.registration,
-            make: d.Vehicle.make,
-            model: d.Vehicle.model,
-          }
-        : null,
-    }));
+  const filteredDrivers: DriverForClient[] = drivers.map((d) => ({
+    id: d.id,
+    firstName: d.firstName,
+    lastName: d.lastName,
+    licenseNumber: d.licenseNumber,
+    licenseExpiry: d.licenseExpiry.toISOString(),
+    phone: d.phone,
+    isActive: d.isActive,
+    vehicle: d.Vehicle
+      ? {
+          id: d.Vehicle.id,
+          registration: d.Vehicle.registration,
+          make: d.Vehicle.make,
+          model: d.Vehicle.model,
+        }
+      : null,
+  }));
 
   const canManage = userRole === "SUPER_ADMIN" || userRole === "SCHOOL_ADMIN";
 
@@ -186,7 +187,13 @@ export default async function TransportPage() {
 
   // Transform vehicles for client
   const transformedVehicles = vehicles.map((v) => ({
-    ...v,
+    id: v.id,
+    registration: v.registration,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    capacity: v.capacity,
+    status: v.status,
     driver: v.Driver
       ? {
           id: v.Driver.id,
@@ -225,6 +232,7 @@ export default async function TransportPage() {
           <TabsTrigger value="routes">Routes</TabsTrigger>
           <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
           <TabsTrigger value="drivers">Drivers</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           <TabsTrigger value="assignments">Student Assignments</TabsTrigger>
         </TabsList>
 
@@ -248,6 +256,13 @@ export default async function TransportPage() {
         <TabsContent value="drivers">
           <DriversClient
             initialDrivers={filteredDrivers}
+            canManage={canManage}
+          />
+        </TabsContent>
+
+        <TabsContent value="maintenance">
+          <MaintenanceClient
+            vehicles={transformedVehicles}
             canManage={canManage}
           />
         </TabsContent>
