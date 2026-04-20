@@ -15,7 +15,7 @@ const createDriverSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   licenseNumber: z.string().min(1, "License number is required"),
   licenseExpiry: z.string().min(1, "License expiry date is required"),
-  phone: z.string().optional(),
+  phone: z.string().optional().or(z.literal("")),
 });
 
 // ─────────────────────────────────────────────
