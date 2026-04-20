@@ -81,7 +81,11 @@ const addBookSchema = z.object({
   authors: z.string().min(1, "Author(s) are required"),
   isbn: z.string().optional(),
   publisher: z.string().optional(),
-  publishYear: z.number().int().min(1000).max(new Date().getFullYear() + 1).optional().nullable(),
+  publishYear: z
+    .preprocess(
+      (val) => (val === "" || Number.isNaN(val) ? null : val),
+      z.number().int().min(1000).max(new Date().getFullYear() + 1).nullable().optional()
+    ),
   edition: z.string().optional(),
   category: z.string().optional(),
   shelfLocation: z.string().optional(),
@@ -179,7 +183,7 @@ function AddBookForm({
             min={1000}
             max={new Date().getFullYear() + 1}
             placeholder={String(new Date().getFullYear())}
-            {...register("publishYear")}
+            {...register("publishYear", { valueAsNumber: true })}
           />
           {errors.publishYear && (
             <p className="text-xs text-destructive">{errors.publishYear.message}</p>
@@ -202,7 +206,7 @@ function AddBookForm({
             type="number"
             min={1}
             defaultValue={1}
-            {...register("totalCopies")}
+            {...register("totalCopies", { valueAsNumber: true })}
           />
           {errors.totalCopies && (
             <p className="text-xs text-destructive">{errors.totalCopies.message}</p>
