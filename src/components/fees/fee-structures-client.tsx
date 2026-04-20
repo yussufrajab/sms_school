@@ -370,7 +370,7 @@ export function FeeStructuresClient({
                         {structure.class?.name || <span className="text-muted-foreground">All Classes</span>}
                       </TableCell>
                       <TableCell className="font-medium">
-                        ${structure.amount.toLocaleString()}
+                        TZS {structure.amount.toLocaleString()}
                       </TableCell>
                       <TableCell>
                         {structure.dueDay ? `Day ${structure.dueDay}` : "-"}

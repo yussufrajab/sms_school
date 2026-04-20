@@ -168,8 +168,17 @@ export async function GET(req: NextRequest) {
       prisma.invoice.count({ where }),
     ]);
 
+    // Transform to match client expected format
+    const transformedInvoices = invoices.map((invoice) => ({
+      ...invoice,
+      student: invoice.Student,
+      academicYear: invoice.AcademicYear,
+      items: invoice.InvoiceItem,
+      _count: { payments: invoice._count.Payment },
+    }));
+
     return NextResponse.json({
-      data: invoices,
+      data: transformedInvoices,
       pagination: {
         page,
         limit,

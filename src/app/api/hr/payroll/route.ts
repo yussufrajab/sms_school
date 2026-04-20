@@ -74,7 +74,47 @@ export async function GET(req: NextRequest) {
       orderBy: [{ year: "desc" }, { month: "desc" }],
     });
 
-    return NextResponse.json(payrolls);
+    // Transform data to match frontend expectations
+    const payrollData = payrolls.map((payroll) => ({
+      id: payroll.id,
+      academicYearId: payroll.academicYearId,
+      academicYear: payroll.AcademicYear.name,
+      month: payroll.month,
+      year: payroll.year,
+      totalAmount: payroll.totalAmount,
+      isApproved: payroll.isApproved,
+      isLocked: payroll.isLocked,
+      status: payroll.isLocked ? "LOCKED" : payroll.isApproved ? "APPROVED" : "DRAFT" as const,
+      createdAt: payroll.createdAt.toISOString(),
+      itemCount: payroll._count.PayrollItem,
+      items: payroll.PayrollItem.map((item) => ({
+        id: item.id,
+        staffId: item.staffId,
+        staff: {
+          id: item.Staff.id,
+          firstName: item.Staff.firstName,
+          lastName: item.Staff.lastName,
+          employeeId: item.Staff.employeeId,
+          department: item.Staff.department,
+          designation: item.Staff.designation,
+          user: {
+            email: item.Staff.User.email,
+            image: item.Staff.User.image,
+          },
+        },
+        basicSalary: item.basicSalary,
+        housingAllowance: item.housingAllowance,
+        transportAllowance: item.transportAllowance,
+        grossSalary: item.grossSalary,
+        taxDeduction: item.taxDeduction,
+        pensionDeduction: item.pensionDeduction,
+        healthDeduction: item.healthDeduction,
+        leaveDeduction: item.leaveDeduction,
+        netSalary: item.netSalary,
+      })),
+    }));
+
+    return NextResponse.json(payrollData);
   } catch (error) {
     console.error("[GET /api/hr/payroll]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
